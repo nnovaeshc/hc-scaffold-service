@@ -20,6 +20,7 @@ from check import (  # noqa: E402
     TranscriptAsserter, actual_model, load_all_expectations, run_assertions, write_grading, write_timing,
 )
 import cache  # noqa: E402
+import run_claude_turns  # noqa: E402
 
 
 def next_iteration(workspace_dir: Path) -> int:
@@ -60,35 +61,22 @@ def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict
 
     prompt = scenario["prompt"] if with_skill else fair_prompt(scenario)
     stub_scenario = scenario.get("stub_scenario", "default")
-
-    claude_cmd = ["claude", "-p", "--verbose", "--output-format", "stream-json", "--permission-mode", "bypassPermissions"]
-    if model:
-        claude_cmd += ["--model", model]
-    if effort:
-        claude_cmd += ["--effort", effort]
-    claude_cmd.append(prompt)
-
-    run_env = dict(env)
-    run_env["STUB_SCENARIO"] = stub_scenario
-    run_env["SKILLS_TEMPLATE"] = (
-        "/work/test/skills.test.yaml" if with_skill else "/work/test/skills.none.test.yaml"
-    )
-    if model:
-        run_env["MODEL"] = model
+    replies = scenario.get("replies") or []
 
     arm_dir.mkdir(parents=True, exist_ok=True)
     (arm_dir / "outputs").mkdir(exist_ok=True)
     transcript_path = arm_dir / "transcript.jsonl"
 
-    quoted_cmd = " ".join(
-        f"'{part}'" if " " in part or part == prompt else part for part in claude_cmd
+    transcript_text = run_claude_turns.run_turns(
+        prompt,
+        replies,
+        model=model,
+        effort=effort,
+        env=env,
+        stub_scenario=stub_scenario,
+        with_skill=with_skill,
     )
-    result = subprocess.run(
-        ["docker-compose", "-f", str(REPO_ROOT / "test" / "docker-compose.yaml"), "run", "--rm", "ai-tdd",
-         "bash", "-c", quoted_cmd],
-        cwd=REPO_ROOT, env=run_env, capture_output=True, text=True,
-    )
-    transcript_path.write_text(result.stdout + result.stderr)
+    transcript_path.write_text(transcript_text)
 
     asserter = TranscriptAsserter(str(transcript_path))
     expectations = load_all_expectations(scenario)

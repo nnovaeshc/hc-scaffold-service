@@ -21,6 +21,7 @@ SKILL_FILES = [
 ]
 HARNESS_FILES = [
     REPO_ROOT / "test" / "run.sh",
+    REPO_ROOT / "test" / "run_claude_turns.py",
     REPO_ROOT / "test" / "assertions" / "write_workspace.py",
     REPO_ROOT / "test" / "assertions" / "check.py",
     REPO_ROOT / "test" / "scenario_lib.py",

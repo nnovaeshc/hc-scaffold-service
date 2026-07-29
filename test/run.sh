@@ -179,19 +179,40 @@ for scenario in "${SCENARIOS[@]}"; do
     fi
   fi
 
-  # Build claude command
-  claude_cmd="claude -p --verbose --output-format stream-json --permission-mode bypassPermissions"
-  [[ -n "$MODEL" ]] && claude_cmd="$claude_cmd --model $MODEL"
-  [[ -n "$EFFORT" ]] && claude_cmd="$claude_cmd --effort $EFFORT"
-  claude_cmd="$claude_cmd '$prompt'"
-
-  # Run in docker
+  # Run in docker (multi-turn when scenario declares replies:)
   transcript_file="test/results/${scenario}-transcript.jsonl"
   result_dir="test/results/${scenario}"
   export STUB_SCENARIO="$stub_scenario"
+  mkdir -p "test/results"
 
-  docker-compose -f test/docker-compose.yaml run --rm ai-tdd \
-    bash -c "$claude_cmd" > "$transcript_file" 2>&1 || true
+  reply_args=()
+  while IFS= read -r reply; do
+    [[ -n "$reply" ]] && reply_args+=(--reply "$reply")
+  done < <(python3 -c "
+import sys
+sys.path.insert(0, 'test')
+from scenario_lib import load_scenario
+for r in load_scenario(sys.argv[1]).get('replies') or []:
+    print(r)
+" "$scenario_file")
+
+  with_skill_flag=false
+  if [[ "$INSTALL_SKILL" == "true" ]]; then
+    with_skill_flag=true
+  fi
+  model_args=()
+  [[ -n "$MODEL" ]] && model_args+=(--model "$MODEL")
+  effort_args=()
+  [[ -n "$EFFORT" ]] && effort_args+=(--effort "$EFFORT")
+
+  python3 test/run_claude_turns.py \
+    --prompt "$prompt" \
+    --stub-scenario "$stub_scenario" \
+    --with-skill "$with_skill_flag" \
+    "${model_args[@]}" \
+    "${effort_args[@]}" \
+    "${reply_args[@]}" \
+    > "$transcript_file" 2>&1 || true
 
   # Run assertions
   if [[ -f test/assertions/check.py ]]; then
