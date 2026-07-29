@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 
 # Flags
 INSTALL_SKILL=true
-MODEL="${MODEL:-claude-sonnet-4-5}"
+MODEL="${MODEL:-}"
 EFFORT="${EFFORT:-}"
 
 usage() {
@@ -21,7 +21,7 @@ Run hc-scaffold-service test scenarios.
 OPTIONS:
   --no-skill          Run without installing the skill (baseline mode)
   --without-skill     Alias of --no-skill
-  --model MODEL       Override model (default: claude-sonnet-4-5)
+  --model MODEL       Override model (default: whatever ai-tdd:latest bakes in)
   --effort LEVEL      Set effort level (low|medium|high|xhigh|max)
   -h, --help          Show this help
 
@@ -173,6 +173,7 @@ for scenario in "${SCENARIOS[@]}"; do
 
   # Build claude command
   claude_cmd="claude -p --verbose --output-format stream-json --permission-mode bypassPermissions"
+  [[ -n "$MODEL" ]] && claude_cmd="$claude_cmd --model $MODEL"
   [[ -n "$EFFORT" ]] && claude_cmd="$claude_cmd --effort $EFFORT"
   claude_cmd="$claude_cmd '$prompt'"
 

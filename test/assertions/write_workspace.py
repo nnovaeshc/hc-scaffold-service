@@ -16,7 +16,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "test"))
 from scenario_lib import select_scenarios, fair_prompt  # noqa: E402
 sys.path.insert(0, str(REPO_ROOT / "test" / "assertions"))
-from check import TranscriptAsserter, load_all_expectations, run_assertions, write_grading, write_timing  # noqa: E402
+from check import (  # noqa: E402
+    TranscriptAsserter, actual_model, load_all_expectations, run_assertions, write_grading, write_timing,
+)
 
 
 def next_iteration(workspace_dir: Path) -> int:
@@ -51,6 +53,8 @@ def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict
     stub_scenario = scenario.get("stub_scenario", "default")
 
     claude_cmd = ["claude", "-p", "--verbose", "--output-format", "stream-json", "--permission-mode", "bypassPermissions"]
+    if model:
+        claude_cmd += ["--model", model]
     if effort:
         claude_cmd += ["--effort", effort]
     claude_cmd.append(prompt)
@@ -60,7 +64,8 @@ def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict
     run_env["SKILLS_TEMPLATE"] = (
         "/work/test/skills.test.yaml" if with_skill else "/work/test/skills.none.test.yaml"
     )
-    run_env["MODEL"] = model
+    if model:
+        run_env["MODEL"] = model
 
     arm_dir.mkdir(parents=True, exist_ok=True)
     (arm_dir / "outputs").mkdir(exist_ok=True)
@@ -81,7 +86,12 @@ def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict
     results = run_assertions(asserter, expectations)
     grading = write_grading(results, arm_dir)
     timing = write_timing(asserter, arm_dir)
-    return {"grading": grading, "timing": timing, "pass": grading["summary"]["failed"] == 0}
+    return {
+        "grading": grading,
+        "timing": timing,
+        "pass": grading["summary"]["failed"] == 0,
+        "model": actual_model(asserter),
+    }
 
 
 def mean(values):
@@ -89,7 +99,10 @@ def mean(values):
     return (sum(values) / len(values)) if values else 0.0
 
 
-def build_benchmark(scenarios, per_scenario, filters, skill_sha, model, effort):
+def build_benchmark(scenarios, per_scenario, filters, skill_sha, requested_model, effort):
+    actual_models = {r["with_skill"].get("model") for r in per_scenario if r["with_skill"].get("model")}
+    model = next(iter(actual_models)) if len(actual_models) == 1 else requested_model
+
     with_pass = [r["with_skill"]["pass"] for r in per_scenario]
     without_pass = [r["without_skill"]["pass"] for r in per_scenario]
     with_time = [r["with_skill"]["timing"]["duration_ms"] / 1000.0 for r in per_scenario]
@@ -190,8 +203,8 @@ def main():
     parser.add_argument("--type")
     parser.add_argument("--feature")
     parser.add_argument("--tests")
-    parser.add_argument("--model", default=os.environ.get("MODEL", "claude-sonnet-4-5"))
-    parser.add_argument("--effort", default=os.environ.get("EFFORT", ""))
+    parser.add_argument("--model", default=os.environ.get("MODEL") or "")
+    parser.add_argument("--effort", default=os.environ.get("EFFORT") or "")
     args = parser.parse_args()
 
     scenarios = select_scenarios(

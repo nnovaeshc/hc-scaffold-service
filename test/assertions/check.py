@@ -268,6 +268,17 @@ def write_grading(results: List[Dict[str, Any]], outdir: Path):
     return grading
 
 
+def actual_model(asserter: TranscriptAsserter) -> Optional[str]:
+    """Model actually used, read from the result message's modelUsage keys
+    rather than what was requested - a request can be silently substituted."""
+    if not asserter.result_message:
+        return None
+    model_usage = asserter.result_message.get("modelUsage") or {}
+    if model_usage:
+        return next(iter(model_usage))
+    return asserter.result_message.get("model")
+
+
 def write_timing(asserter: TranscriptAsserter, outdir: Path):
     usage = asserter.usage_total
     total_tokens = sum(usage.values())
