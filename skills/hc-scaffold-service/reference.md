@@ -2,6 +2,17 @@
 
 Detailed schema walking, precedence, and Backstage conventions.
 
+## Contents
+
+- Schema Walk Algorithm - page and field traversal order, classification
+- Construct Support - JSON Schema keywords, Backstage `ui:` dialect, conditionals
+- Value Precedence (per field) - resolution order, first match wins
+- Recognized `ui:field` Widgets - OwnerPicker, RepoUrlPicker, EntityPicker, others
+- Collision Detection - catalog and GitHub name checks
+- Output Links Reporting - link type heuristics for task output
+- Context Budget: Query Shape - required `fields` and `limit` on every query
+- Secrets Refusal - detection keys and the redirect message
+
 ## Schema Walk Algorithm
 
 1. **Process `spec.parameters` in order** - each item is a page
