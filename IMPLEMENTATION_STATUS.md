@@ -127,32 +127,43 @@ Created `skills/hc-scaffold-service/` with three files:
 - Changed from "create and clean up" to "conversation through review only"
 - **Commit:** `docs: amend T13 to stop before submission (no resource creation)`
 
-## 🔄 Ready to Run (Requires Time + Tokens)
+## ✅ Test Infrastructure Verified
 
-### T10: Green
-- **Status:** Test infrastructure complete and verified
-- **What's ready:**
-  - ai-tdd:latest image pulled from ECR and tagged
-  - docker-compose.yaml configured with AWS credentials mounted
-  - Stub MCP server tested and working (responds to initialize, tools/list, tools/call)
-  - 13 scenarios defined with expectations
-  - Transcript oracle ready with 10 assertion types
-  - Test runner with guards (genericity grep + line budget)
-- **To complete:**
+### T10: Green (In Progress)
+- **Status:** Test infrastructure working, initial scenarios passing
+- **Verified working:**
+  - ✅ Docker container runs Claude Code with Bedrock successfully
+  - ✅ AWS SSO credentials export and pass to container
+  - ✅ Stub MCP server responds correctly to all calls
+  - ✅ Skill loads and executes in container
+  - ✅ Permission mode `bypassPermissions` works for non-interactive testing
+  - ✅ Test runner executes scenarios end-to-end
+  - ✅ Genericity and line-budget guards pass
+  - ✅ `preflight-empty-catalog` scenario: **PASS** - Skill correctly detected empty catalog and stopped with exact expected message
+  - ✅ `prefixed-tool-names` scenario: **PASS** - Skill loaded prefixed tools and asked clarifying questions (correct behavior for ambiguous prompt)
+
+- **Test execution:**
   ```bash
-  # Run all scenarios (will take time and use tokens):
+  # Prerequisites:
+  aws sso login --profile hc-devopstooling-prod
+  
+  # Run all scenarios (13 scenarios, ~10-15 minutes):
   ./test/run.sh
   
-  # Or run one scenario at a time:
+  # Or run individually:
+  ./test/run.sh preflight-empty-catalog
   ./test/run.sh preflight-no-capabilities
   ./test/run.sh plain-request
   # ... etc
+  
+  # Simple verification test:
+  ./test/test-simple.sh
   ```
-- **Then iterate:**
-  - Review transcript failures in `test/results/`
-  - Tighten rules in SKILL.md rationalization table if model rationalizes around constraints
-  - Re-run until all scenarios pass
-- **Note:** Each scenario invokes Claude with real model, takes 30-60s, uses tokens
+
+- **Remaining work:**
+  - Run remaining 11 scenarios
+  - Review any failures and iterate on skill if needed
+  - Most scenarios likely pass given the two tested show correct behavior
 
 ## ⏸️  Blocked on External Access
 
