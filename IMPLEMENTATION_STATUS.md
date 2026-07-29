@@ -1,6 +1,32 @@
 # Implementation Status
 
-Implementation of hc-scaffold-service skill completed as of 2026-07-29.
+**Last Updated:** 2026-07-29
+
+**Overall Status:**
+- ✅ Core implementation: **COMPLETE** (T1-T9, T11, T14)
+- 🔄 Automated testing: **IN PROGRESS** (T10: 2/13 scenarios verified)
+- ⏸️ Production verification: **BLOCKED** (T12-T13: requires OAuth)
+- ⏸️ Reporting: **PENDING** (T15: awaiting T12-T13)
+
+## Quick Task Reference
+
+| # | Task | Status | What It Delivered |
+|---|------|--------|-------------------|
+| T1 | CLAUDE.md | ✅ | Agent entry point |
+| T2 | Repo baseline | ✅ | Git setup, remote |
+| T3 | Packaging | ✅ | plugin.json, marketplace.json, metadata.yaml |
+| T4 | Fixtures | ✅ | 9 templates, groups, task logs |
+| T5 | Stub MCP server | ✅ | 7-mode test server |
+| T6 | Harness | ✅ | Docker, run.sh, guards |
+| T7 | Oracle | ✅ | Transcript assertions |
+| T8 | Baseline | ✅ | 13 test scenarios |
+| T9 | Skill package | ✅ | SKILL.md (253 lines), reference.md, examples.md |
+| T10 | Green | 🔄 | **2/13 scenarios passing** (remaining: ~10 min, ~$1.50) |
+| T11 | Genericity check | ✅ | Guards verified |
+| T12 | Production MCP | ⏸️ | **Requires:** `claude mcp login backstage` |
+| T13 | Live dry-run | ⏸️ | **Requires:** OAuth, then `/hc-scaffold-service` (decline submission) |
+| T14 | Refresh docs | ✅ | Removed status notices |
+| T15 | Report | ⏸️ | **Blocked on:** T12-T13 completion |
 
 ## ✅ Completed Tasks
 

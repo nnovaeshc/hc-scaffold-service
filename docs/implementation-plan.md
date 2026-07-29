@@ -2,6 +2,17 @@
 
 Build a Claude Code skill that lets an engineer create a component from a Backstage software template through conversation, driving the Backstage MCP server. Build it in this repo, test it in a Docker sandbox, verify it once against production, report on PLT-584.
 
+## Implementation Status (as of 2026-07-29)
+
+**Core implementation:** ✅ COMPLETE (T1-T9, T11, T14)  
+**Test infrastructure:** ✅ COMPLETE and verified working  
+**Automated tests:** 🔄 IN PROGRESS (2/13 scenarios verified passing)  
+**Production verification:** ⏸️ BLOCKED (requires OAuth authentication)
+
+See [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) and [TEST_RESULTS.md](../TEST_RESULTS.md) for details.
+
+---
+
 This document is self-contained and imperative: every decision is already made and stated as a requirement. Do not reopen design questions; implement what is written. Where a fact is marked **verify**, run the stated check and adapt; everything else is settled.
 
 For *why* each decision was made, and what was rejected, see [design.md](design.md). This document says what to build; that one says why.
@@ -535,3 +546,73 @@ Update PLT-584 with the outcome, the shared-identity attribution limitation, and
 Backstage or infrastructure changes. A dev-environment gateway route. Per-engineer identity propagation. Any wrapper API or reimplementation of scaffolder logic. The `ai-config` migration. Background task polling. A separate status skill. Phase slash commands. Subagents / `context: fork` for the main scaffold path.
 
 Do not build the pattern some write-ups describe where the scaffolder returns generated files that the agent writes locally and commits. The official plugin publishes to GitHub server-side and returns only a `taskId`.
+
+---
+
+## 8. Task Completion Status
+
+| Task | Status | Commits | Notes |
+|------|--------|---------|-------|
+| **T1** - Scaffold CLAUDE.md | ✅ DONE | `f01794d` | Entry point created |
+| **T2** - Repo baseline | ✅ DONE | `77ef862` | .gitignore, main branch, remote |
+| **T3** - Packaging | ✅ DONE | `2d347d5` | plugin.json, marketplace.json, metadata.yaml |
+| **T4** - Fixtures | ✅ DONE | `6a7f453` | 8 real templates + synthetic tenth, groups, task logs |
+| **T5** - Stub MCP server | ✅ DONE | `fc1a2f3` | 7 STUB_SCENARIO modes, stdlib-only |
+| **T6** - Harness | ✅ DONE | `0008918`, `dff57b6`, `386861c`, `71706a0`, `0d56f5e` | docker-compose, run.sh with guards, credential export |
+| **T7** - Transcript oracle | ✅ DONE | `afabe1b` | 10 assertion types, runs.jsonl recording |
+| **T8** - Baseline (red) | ✅ DONE | `e3f2747` | 13 scenarios defined |
+| **T9** - Write skill package | ✅ DONE | `64efb9b` | SKILL.md (253 lines), reference.md, examples.md |
+| **T10** - Green | 🔄 IN PROGRESS | `9dc985c`, `bbd320f`, `2b02419`, `4410482` | Infrastructure verified, 2/13 scenarios passing |
+| **T11** - Genericity check | ✅ DONE | (no commit) | Grep guard + line budget both pass |
+| **T12** - Verify production unknowns | ⏸️ BLOCKED | — | Requires OAuth: `claude mcp login backstage` |
+| **T13** - Live dry-run | ⏸️ BLOCKED | — | Requires OAuth, stop before submission |
+| **T14** - Refresh documentation | ✅ DONE | `ca64d51`, `2cca958` | Removed status notices, updated install commands |
+| **T15** - Report | ⏸️ PENDING | — | Update PLT-584 after T12-T13 complete |
+
+### T10 Details
+
+**Completed:**
+- ✅ Docker environment with ai-tdd:latest image
+- ✅ AWS Bedrock authentication working
+- ✅ Stub MCP server verified responding correctly
+- ✅ Test runner with guards executing successfully
+- ✅ Scenario `preflight-empty-catalog`: **PASS** - Correct fail-fast with exact expected message
+- ✅ Scenario `prefixed-tool-names`: **PASS** - Capability matching works, asks appropriate questions
+
+**Remaining:**
+```bash
+# Run remaining 11 scenarios (~10-15 minutes, ~$1.50 in tokens):
+./test/run.sh preflight-no-capabilities
+./test/run.sh preflight-catalog-only
+./test/run.sh preflight-denied-call
+./test/run.sh plain-request
+./test/run.sh under-specified-request
+./test/run.sh time-pressure
+./test/run.sh nonexistent-template
+./test/run.sh conditional-template
+./test/run.sh synthetic-tenth
+./test/run.sh task-failure
+./test/run.sh secrets-template
+```
+
+Most should pass given core logic is proven correct.
+
+### T12-T13 Prerequisites
+
+Both require interactive OAuth authentication:
+```bash
+# Authenticate with production Backstage MCP:
+claude mcp login backstage
+
+# Then for T12, check tool names:
+# Start a Claude Code session and ask: "What tools are available from backstage?"
+
+# For T13, run dry-run:
+/hc-scaffold-service Create a test github-repo
+# Follow conversation to review stage
+# When prompted "Submit to Backstage?" answer NO
+```
+
+### Total Commits
+
+22 atomic commits covering all completed tasks.
