@@ -7,6 +7,7 @@ Detailed schema walking, precedence, and Backstage conventions.
 - Schema Walk Algorithm - page and field traversal order, classification
 - Construct Support - JSON Schema keywords, Backstage `ui:` dialect, conditionals
 - Value Precedence (per field) - resolution order, first match wins
+- Constraint Validation - keyword checks, candidate repair, nested scope
 - Recognized `ui:field` Widgets - OwnerPicker, RepoUrlPicker, EntityPicker, others
 - Collision Detection - catalog and GitHub name checks
 - Output Links Reporting - link type heuristics for task output
@@ -26,6 +27,7 @@ Detailed schema walking, precedence, and Backstage conventions.
    - Note `enum` (allowable values) and `enumNames` (display labels)
    - Note `default` if present
    - Note `format` (email, uri, date, etc.) if present
+   - Note every constraint keyword present: `pattern`, length, numeric bounds, item counts (see Constraint Validation)
    - Inspect `ui:field` for rendering widget
    - Inspect `ui:options` for widget-specific constraints
    - Check `items` - may be a schema (homogeneous array) or positional tuple
@@ -44,6 +46,12 @@ Detailed schema walking, precedence, and Backstage conventions.
 - **`default`**: pre-filled value
 - **`format`**: hint for validation (email, uri, date, uuid, etc.)
 - **`required`**: array of field names that must have a value
+- **`pattern`**: regular expression the string value must match
+- **`minLength`** / **`maxLength`**: string length bounds
+- **`minimum`** / **`maximum`** / **`exclusiveMinimum`** / **`exclusiveMaximum`**: numeric bounds
+- **`multipleOf`**: numeric divisor
+- **`minItems`** / **`maxItems`** / **`uniqueItems`**: array bounds
+- **`const`**: single allowed value (equivalent to a one-item `enum`)
 - **`dependencies`**: fields that gate other fields
 - **`$ref`**: reference to `definitions` block (resolve recursively)
 - **`definitions`**: named schema fragments
@@ -86,6 +94,52 @@ Evaluate in this order; first match wins:
 6. **Ask**
 
 Never skip 1 or 2 to honor 3. If a `default` exists, apply it unless the engineer explicitly overrode it.
+
+## Constraint Validation
+
+Submission is one shot: `execute-template` returns a `taskId`, not a validation verdict, and a failed task must not be resubmitted. Every value must therefore satisfy the schema **before** it is submitted, whoever produced it.
+
+Validation is driven **only** by the keywords the schema declares. A keyword that is absent imposes no check. **Never invent a constraint** - not from what a value "looks like", not from what similar templates do, not from naming conventions you have seen. An invented rule rejects legal values on templates you have never seen.
+
+### Keyword checks
+
+| Declared | Check the value against it |
+|----------|---------------------------|
+| `type` | Value is that type, or unambiguously coercible to it (`"true"` → boolean, `"3"` → number) |
+| `pattern` | Full string matches the regex as written |
+| `minLength` / `maxLength` | String length within bounds |
+| `minimum` / `maximum` / `exclusive*` | Number within bounds |
+| `multipleOf` | Number divides evenly |
+| `enum` / `const` | Value is a member / equals the constant, exact case |
+| `minItems` / `maxItems` / `uniqueItems` | Array length within bounds; no duplicates |
+| `required` | Field is present and not empty |
+| `format` | For `email`, `uri`, `uuid`, `date`: check the shape. All other formats are advisory - report a mismatch, do not block |
+
+Constraints **compose**: a value must satisfy every keyword declared on the field, not just the first that fails.
+
+Constraints reachable through `ui:options` are checked the same way: `RepoUrlPicker`'s `allowedHosts` / `allowedOwners` are membership constraints on the composed parts, and `EntityPicker` / `OwnerPicker` values must resolve to a real catalog entity (see Recognized Widgets).
+
+Unrecognized keywords are not constraints. Mention them to the engineer if they look load-bearing; never block on them. An unrecognized `ui:field` does not exempt a field - its declared JSON Schema keywords still apply.
+
+### Scope
+
+- Every field in the submitted payload, whatever its provenance: engineer-stated, `default`, catalog precedent, or derived from context.
+- Inside `$ref`-resolved objects and `items` schemas, including each positional entry of a tuple.
+- Skip fields excluded by `dependencies` - they are not submitted, so their constraints do not apply.
+
+### Candidate repair
+
+When a value fails, propose exactly one compliant candidate derived **mechanically from the violated keyword**:
+
+| Violated | Proposal |
+|----------|----------|
+| `pattern` restricted to lowercase/digits/separator | Lowercase, replace runs of disallowed characters with the separator the pattern allows, trim leading and trailing separators |
+| `maxLength` | Truncate at a word or separator boundary |
+| `enum` / `const` | The member closest to what was given, quoted exactly as declared |
+| numeric bound | The nearest allowed value |
+| anything else | No proposal. Say what is required and ask |
+
+Never rewrite silently, and never submit the original value. The proposal is a suggestion the engineer confirms or replaces - a repaired name is still their decision, since it becomes a repository name and a catalog identity.
 
 ## Recognized `ui:field` Widgets
 

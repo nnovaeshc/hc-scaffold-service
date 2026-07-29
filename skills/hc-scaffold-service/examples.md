@@ -58,6 +58,43 @@ The catalog query succeeded but returned zero Template entities.
 Verify templates are registered in your Backstage instance.
 ```
 
+## Constraint violation messages
+
+### Pattern violation, with a mechanical repair
+
+```
+`componentId` must match ^[a-z0-9-]+$ - lowercase letters, digits and
+hyphens only. "My Service!! v2" has capitals, spaces and punctuation.
+
+Use `my-service-v2`? (or give another name)
+```
+
+### Length violation
+
+```
+`componentId` has a maxLength of 40. What you gave is 58 characters.
+
+Use `some-truncated-name-at-a-word-boundary`? (or give another name)
+```
+
+### Violation with no mechanical repair
+
+```
+`retentionDays` must be a multiple of 7 between 7 and 365. "10" is not.
+
+What value would you like?
+```
+
+### Pre-submission gate failure (value the skill derived, not one the engineer typed)
+
+```
+Stopping before submission. `repoName` was derived from the working
+directory as `My_Service`, which violates the template's declared
+pattern ^[a-z0-9-]+$.
+
+Use `my-service`? (or give another name)
+```
+
 ## Synthetic multi-page ask sequence
 
 **Page 1 fields:**
