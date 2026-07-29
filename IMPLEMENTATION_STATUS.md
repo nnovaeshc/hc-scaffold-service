@@ -127,21 +127,32 @@ Created `skills/hc-scaffold-service/` with three files:
 - Changed from "create and clean up" to "conversation through review only"
 - **Commit:** `docs: amend T13 to stop before submission (no resource creation)`
 
-## 🔄 Partially Complete
+## 🔄 Ready to Run (Requires Time + Tokens)
 
 ### T10: Green
-- **Status:** Docker environment verified, image pulled from ECR
-- **Blocked:** Requires running Claude Code in container with full test suite
+- **Status:** Test infrastructure complete and verified
 - **What's ready:**
-  - ai-tdd:latest image pulled and tagged locally
-  - docker-compose.yaml configured correctly
-  - Stub MCP server tested and working
-  - Scenarios defined
-- **What's needed:**
-  - Run `test/run.sh` with skill installed
-  - Analyze transcript failures
-  - Iterate on skill package to fix rationalization gaps
-  - This is a verification/iteration step - core skill logic is complete
+  - ai-tdd:latest image pulled from ECR and tagged
+  - docker-compose.yaml configured with AWS credentials mounted
+  - Stub MCP server tested and working (responds to initialize, tools/list, tools/call)
+  - 13 scenarios defined with expectations
+  - Transcript oracle ready with 10 assertion types
+  - Test runner with guards (genericity grep + line budget)
+- **To complete:**
+  ```bash
+  # Run all scenarios (will take time and use tokens):
+  ./test/run.sh
+  
+  # Or run one scenario at a time:
+  ./test/run.sh preflight-no-capabilities
+  ./test/run.sh plain-request
+  # ... etc
+  ```
+- **Then iterate:**
+  - Review transcript failures in `test/results/`
+  - Tighten rules in SKILL.md rationalization table if model rationalizes around constraints
+  - Re-run until all scenarios pass
+- **Note:** Each scenario invokes Claude with real model, takes 30-60s, uses tokens
 
 ## ⏸️  Blocked on External Access
 

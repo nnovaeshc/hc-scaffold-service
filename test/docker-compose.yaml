@@ -5,7 +5,9 @@ services:
     image: ai-tdd:latest
     volumes:
       - ..:/work:ro
+      - ~/.aws:/root/.aws:ro
     environment:
+      - AWS_PROFILE=hc-devopstooling-prod
       - MCP_SERVERS_TEMPLATE=/work/test/mcp-servers.test.yaml
       - SKILLS_TEMPLATE=/work/test/skills.test.yaml
       - STUB_SCENARIO=${STUB_SCENARIO:-default}
