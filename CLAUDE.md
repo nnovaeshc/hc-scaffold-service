@@ -22,6 +22,7 @@ Install [Task](https://taskfile.dev/installation/) (`brew install go-task`) once
 - Before treating a change as done for merge/release: `task test:compare` (full paired A/B).
 - After adding or editing a scenario: `task test:evals:sync`; CI checks drift with `task test:evals:check`.
 - skill-creator (trigger/description tuning, interactive only): `task test:skill-creator:install`, then paste the prompt from `task test:skill-creator:eval` or `task test:skill-creator:triggers`.
+- After any test/eval/compare run, `task test:report` regenerates `test/workspace/TEST_REPORT.html` — a single consolidated view (executive summary, per-scenario evidence, trend across iterations, known gaps) from whatever is currently on disk. Decoupled from running tests — safe to re-run any time, reflects the latest artifacts.
 
 See [docs/align-tests-skill-creator.md](docs/align-tests-skill-creator.md) for the full task list and artifact schemas, and [docs/skill-vs-baseline.md](docs/skill-vs-baseline.md) for the compare CLI and A/B measurement design.
 

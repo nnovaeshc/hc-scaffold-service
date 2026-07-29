@@ -21,6 +21,14 @@ tasks:
       - task: test:guards
       - task: test:compare:tier1
 
+  test:all:
+    desc: "Run everything sequentially: guards, full paired A/B, evals drift check, then the report"
+    cmds:
+      - task: test:guards
+      - task: test:compare
+      - task: test:evals:check
+      - task: test:report
+
   test:guards:
     desc: "Genericity grep + SKILL.md line-budget gate (no docker run)"
     cmds:
@@ -134,6 +142,11 @@ tasks:
     desc: "Fail if test:evals:sync would change evals.json/scenario-map.json"
     cmds:
       - python3 test/scripts/sync_evals.py --check
+
+  test:report:
+    desc: "Generate consolidated TEST_REPORT.html from whatever test/eval artifacts currently exist on disk"
+    cmds:
+      - python3 test/scripts/generate_report.py
 
   test:skill-creator:install:
     desc: "Print the skill-creator plugin install command"
