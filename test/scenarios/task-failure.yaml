@@ -1,7 +1,12 @@
 name: task-failure
 description: Task fails mid-run, checking no resubmit
+compare: true
+tier: 2
+type: discipline
+feature: no-resubmit
 stub_scenario: task_failure
 prompt: Create a github-repo called test-failure-repo
+expected_output: The assistant submits the template once, reports the mid-run task failure clearly, and does not automatically resubmit or retry execute-template.
 expectations:
   - tool_called: execute-template
   - tool_call_count_execute_template: 1

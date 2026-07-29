@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 
 # Flags
 INSTALL_SKILL=true
-MODEL="${MODEL:-claude-sonnet-4-5}"
+MODEL="${MODEL:-}"
 EFFORT="${EFFORT:-}"
 
 usage() {
@@ -20,7 +20,8 @@ Run hc-scaffold-service test scenarios.
 
 OPTIONS:
   --no-skill          Run without installing the skill (baseline mode)
-  --model MODEL       Override model (default: claude-sonnet-4-5)
+  --without-skill     Alias of --no-skill
+  --model MODEL       Override model (default: whatever ai-tdd:latest bakes in)
   --effort LEVEL      Set effort level (low|medium|high|xhigh|max)
   -h, --help          Show this help
 
@@ -42,7 +43,7 @@ EOF
 SCENARIOS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --no-skill)
+    --no-skill|--without-skill)
       INSTALL_SKILL=false
       shift
       ;;
@@ -69,6 +70,12 @@ if [[ ${#SCENARIOS[@]} -eq 0 ]]; then
   if [[ -d test/scenarios ]]; then
     mapfile -t SCENARIOS < <(ls test/scenarios/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' || true)
   fi
+fi
+
+if [[ "$INSTALL_SKILL" == "true" ]]; then
+  export SKILLS_TEMPLATE="/work/test/skills.test.yaml"
+else
+  export SKILLS_TEMPLATE="/work/test/skills.none.test.yaml"
 fi
 
 echo "==> Test harness for hc-scaffold-service"
@@ -103,7 +110,7 @@ FORBIDDEN_PATTERNS=(
 
 GREP_FAILED=false
 for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
-  if grep -r "$pattern" skills/hc-scaffold-service/ 2>/dev/null; then
+  if grep -r "$pattern" skills/hc-scaffold-service/ --exclude-dir=evals 2>/dev/null; then
     echo "ERROR: Found forbidden pattern '$pattern' in skill package"
     GREP_FAILED=true
   fi
@@ -147,13 +154,26 @@ for scenario in "${SCENARIOS[@]}"; do
   echo "==> Running scenario: $scenario"
 
   # Extract prompt and stub scenario from yaml
-  # Simple extraction - assumes prompt: and stub_scenario: are on their own lines
+  # Simple extraction - assumes prompt:, compare_prompt: and stub_scenario: are on their own lines
   prompt=$(sed -n 's/^prompt: //p' "$scenario_file")
+  compare_prompt=$(sed -n 's/^compare_prompt: //p' "$scenario_file")
   stub_scenario=$(sed -n 's/^stub_scenario: //p' "$scenario_file" | head -1)
   stub_scenario=${stub_scenario:-default}
 
+  # Fair prompt for the no-skill arm: use compare_prompt if set, else strip
+  # a leading /hc-scaffold-service (and following space) from prompt.
+  if [[ "$INSTALL_SKILL" == "false" ]]; then
+    if [[ -n "$compare_prompt" ]]; then
+      prompt="$compare_prompt"
+    else
+      prompt="${prompt#/hc-scaffold-service }"
+      prompt="${prompt#/hc-scaffold-service}"
+    fi
+  fi
+
   # Build claude command
   claude_cmd="claude -p --verbose --output-format stream-json --permission-mode bypassPermissions"
+  [[ -n "$MODEL" ]] && claude_cmd="$claude_cmd --model $MODEL"
   [[ -n "$EFFORT" ]] && claude_cmd="$claude_cmd --effort $EFFORT"
   claude_cmd="$claude_cmd '$prompt'"
 

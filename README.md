@@ -59,6 +59,8 @@ See [docs/usage.md](docs/usage.md) for a full walkthrough, what the review step 
 - [docs/usage.md](docs/usage.md) — walkthrough and troubleshooting, for users
 - [docs/design.md](docs/design.md) — architecture and the full decision record, for maintainers
 - [docs/testing.md](docs/testing.md) — how the test harness works, for maintainers
+- [docs/skill-vs-baseline.md](docs/skill-vs-baseline.md) — skill-vs-baseline A/B comparison, for maintainers
+- [docs/align-tests-skill-creator.md](docs/align-tests-skill-creator.md) — Taskfile tasks and workspace/benchmark.json schemas, for maintainers
 - [docs/maintaining.md](docs/maintaining.md) — how to change the skill safely, for maintainers
 - [docs/implementation-plan.md](docs/implementation-plan.md) — the build plan, until it is done
 - [CLAUDE.md](CLAUDE.md) — agent entry point (created by the implementer as the first plan task)
@@ -72,3 +74,15 @@ Build order and the full commit rule live in [docs/implementation-plan.md](docs/
 **Skill changes are verified by tests, because a prompt has no compiler.** Anthropic's guidance on [authoring](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) and [evaluating](https://code.claude.com/docs/en/skills#evaluate-and-iterate-on-a-skill) skills is evaluation-first and ships no runner for the loop it describes, so `test/` is ours. The suite carries one scenario per behavioural claim the skill makes, each recorded failing without the skill before the rule that fixes it is written. Add a claim and you add a scenario; that is where the size of `test/` comes from.
 
 [docs/testing.md](docs/testing.md) has the full rationale and the harness architecture.
+
+**Running the harness.** Install [Task](https://taskfile.dev/installation/) (`brew install go-task`); it is the only documented entry point.
+
+```bash
+task test                    # guards + cheap tier-1 paired compare (skill vs unaided model)
+task test:compare            # full paired A/B across all compare scenarios
+task test:compare:tier TIER=1,2
+task test:compare:type TYPE=preflight
+task test:compare:tests TESTS=plain-request,time-pressure
+```
+
+This is "skill vs baseline": the same scenario run once with `hc-scaffold-service` installed and once without, so a change's actual effect is measured rather than assumed. Run the minimum after any skill edit; run the full compare before merge. See [docs/skill-vs-baseline.md](docs/skill-vs-baseline.md) and [docs/align-tests-skill-creator.md](docs/align-tests-skill-creator.md) for the full CLI, the workspace/`benchmark.json` layout the compare writes, and the skill-creator hybrid (`task test:skill-creator:*`) for trigger/description tuning.

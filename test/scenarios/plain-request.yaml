@@ -1,7 +1,12 @@
 name: plain-request
 description: Plain request to create a service, checking question count stays at or below bound
+compare: true
+tier: 3
+type: interview
+feature: question-budget
 stub_scenario: default
 prompt: I need to create a new Spring Boot microservice for handling payment callbacks
+expected_output: The assistant asks at most 5 questions, infers the rest from context and catalog precedent, and successfully calls execute-template with well-formed catalog queries.
 expectations:
   - question_count_max: 5
   - tool_called: execute-template

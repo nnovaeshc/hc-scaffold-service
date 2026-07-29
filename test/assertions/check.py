@@ -3,10 +3,15 @@
 Transcript oracle for hc-scaffold-service test scenarios.
 Reads stream-json transcripts and asserts declaratively from scenario files.
 """
+import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from scenario_lib import load_scenario  # noqa: E402
 
 
 class TranscriptAsserter:
@@ -27,7 +32,9 @@ class TranscriptAsserter:
         self._load_transcript()
 
     def _load_transcript(self):
-        """Load and parse stream-json transcript."""
+        """Load and parse stream-json transcript. Each line is a top-level
+        event with `type` in {"assistant", "user", "system", "result"}; the
+        first two carry a nested `message.content` block list."""
         with open(self.transcript_path) as f:
             for line in f:
                 line = line.strip()
@@ -35,290 +42,296 @@ class TranscriptAsserter:
                     continue
                 try:
                     msg = json.loads(line)
-                    if msg.get("type") == "message":
-                        self.messages.append(msg)
-
-                        # Extract tool uses
-                        content = msg.get("message", {}).get("content", [])
-                        for item in content:
-                            if item.get("type") == "tool_use":
-                                self.tool_uses.append(item)
-
-                        # Accumulate usage
-                        usage = msg.get("message", {}).get("usage", {})
-                        for key in self.usage_total:
-                            self.usage_total[key] += usage.get(key, 0)
-
-                    elif msg.get("type") == "tool_result":
-                        self.tool_results.append(msg)
-
-                    elif msg.get("type") == "result":
-                        self.result_message = msg
-
                 except json.JSONDecodeError:
                     continue
 
-    def assert_tool_called(self, tool_name: str) -> bool:
-        """Assert a tool was called."""
-        for tool in self.tool_uses:
-            if tool_name in tool.get("name", ""):
-                return True
-        return False
+                msg_type = msg.get("type")
 
-    def assert_tool_not_called(self, tool_name: str) -> bool:
-        """Assert a tool was NOT called."""
-        return not self.assert_tool_called(tool_name)
+                if msg_type in ("assistant", "user"):
+                    self.messages.append(msg)
+                    content = msg.get("message", {}).get("content", [])
+
+                    if msg_type == "assistant":
+                        for item in content:
+                            if item.get("type") == "tool_use":
+                                self.tool_uses.append(item)
+                        usage = msg.get("message", {}).get("usage", {})
+                        for key in self.usage_total:
+                            self.usage_total[key] += usage.get(key, 0)
+                    else:
+                        for item in content:
+                            if item.get("type") == "tool_result":
+                                self.tool_results.append(item)
+
+                elif msg_type == "result":
+                    self.result_message = msg
+
+    def assistant_text(self) -> str:
+        """Concatenate all assistant text blocks, for keyword heuristics."""
+        chunks = []
+        for msg in self.messages:
+            if msg.get("type") != "assistant":
+                continue
+            for item in msg.get("message", {}).get("content", []):
+                if item.get("type") == "text":
+                    chunks.append(item.get("text", ""))
+        return "\n".join(chunks)
 
     def get_tool_calls(self, tool_name: str) -> List[Dict]:
-        """Get all calls to a specific tool."""
-        calls = []
-        for tool in self.tool_uses:
-            if tool_name in tool.get("name", ""):
-                calls.append(tool)
-        return calls
+        return [t for t in self.tool_uses if tool_name in t.get("name", "")]
 
-    def assert_tool_call_count(self, tool_name: str, count: int) -> bool:
-        """Assert exact number of calls to a tool."""
+    # -- mechanical assertions --------------------------------------------
+
+    def assert_tool_called(self, tool_name: str) -> (bool, str):
+        found = bool(self.get_tool_calls(tool_name))
+        return found, f"tool_use name~={tool_name} found={found}"
+
+    def assert_tool_not_called(self, tool_name: str) -> (bool, str):
+        found = bool(self.get_tool_calls(tool_name))
+        return (not found), f"tool_use name~={tool_name} found={found}"
+
+    def assert_tool_call_count(self, tool_name: str, count: int) -> (bool, str):
         actual = len(self.get_tool_calls(tool_name))
-        if actual != count:
-            print(f"  FAIL: Expected {count} calls to {tool_name}, got {actual}")
-            return False
-        return True
+        return actual == count, f"{tool_name} called {actual} times, expected {count}"
 
-    def assert_tool_call_max(self, tool_name: str, max_count: int) -> bool:
-        """Assert tool called at most N times."""
+    def assert_tool_call_max(self, tool_name: str, max_count: int) -> (bool, str):
         actual = len(self.get_tool_calls(tool_name))
-        if actual > max_count:
-            print(f"  FAIL: Expected at most {max_count} calls to {tool_name}, got {actual}")
-            return False
-        return True
+        return actual <= max_count, f"{tool_name} called {actual} times, max {max_count}"
 
-    def assert_call_order(self, first_tool: str, second_tool: str) -> bool:
-        """Assert first tool called before second tool."""
-        first_idx = None
-        second_idx = None
-
-        for idx, tool in enumerate(self.tool_uses):
-            if first_tool in tool.get("name", ""):
-                if first_idx is None:
-                    first_idx = idx
-            if second_tool in tool.get("name", ""):
-                if second_idx is None:
-                    second_idx = idx
-
-        if first_idx is None or second_idx is None:
-            print(f"  FAIL: Could not find both {first_tool} and {second_tool} in tool calls")
-            return False
-
-        if first_idx >= second_idx:
-            print(f"  FAIL: {first_tool} not called before {second_tool}")
-            return False
-
-        return True
-
-    def assert_catalog_queries_have_fields_and_limit(self) -> bool:
-        """Assert all catalog query calls have fields and limit."""
-        catalog_queries = self.get_tool_calls("query-catalog-entities")
-
-        for call in catalog_queries:
+    def assert_catalog_queries_have_fields_and_limit(self) -> (bool, str):
+        calls = self.get_tool_calls("query-catalog-entities")
+        for call in calls:
             input_args = call.get("input", {})
-            if "fields" not in input_args:
-                print(f"  FAIL: Catalog query missing 'fields': {call.get('id')}")
-                return False
-            if "limit" not in input_args:
-                print(f"  FAIL: Catalog query missing 'limit': {call.get('id')}")
-                return False
+            if "fields" not in input_args or "limit" not in input_args:
+                return False, f"catalog query missing fields/limit: {call.get('id')}"
+        return True, f"{len(calls)} catalog queries all carry fields+limit"
 
-        return True
-
-    def assert_json_path_equals(self, tool_name: str, json_path: str, expected_value: Any) -> bool:
-        """Assert a JSON path in tool input equals expected value."""
+    def assert_json_path_absent(self, tool_name: str, json_path: str) -> (bool, str):
         calls = self.get_tool_calls(tool_name)
         if not calls:
-            print(f"  FAIL: No calls to {tool_name}")
-            return False
-
-        # Take the last call
+            return True, f"{tool_name} not called; {json_path} trivially absent"
         call = calls[-1]
-        input_args = call.get("input", {})
-
-        # Navigate JSON path
+        value = call.get("input", {})
         parts = json_path.split(".")
-        value = input_args
-        for part in parts:
-            if isinstance(value, dict):
-                value = value.get(part)
-            else:
-                print(f"  FAIL: Cannot navigate {json_path} in {tool_name} input")
-                return False
-
-        if value != expected_value:
-            print(f"  FAIL: {json_path} in {tool_name} = {value}, expected {expected_value}")
-            return False
-
-        return True
-
-    def assert_json_path_absent(self, tool_name: str, json_path: str) -> bool:
-        """Assert a JSON path is absent from tool input."""
-        calls = self.get_tool_calls(tool_name)
-        if not calls:
-            return True  # If tool not called, path is absent
-
-        call = calls[-1]
-        input_args = call.get("input", {})
-
-        # Navigate JSON path
-        parts = json_path.split(".")
-        value = input_args
         for part in parts:
             if isinstance(value, dict):
                 if part not in value:
-                    return True  # Path absent
+                    return True, f"{json_path} absent from {tool_name} input"
                 value = value[part]
             else:
-                return True  # Cannot navigate further
+                return True, f"{json_path} not navigable in {tool_name} input"
+        return False, f"{json_path} present in {tool_name} input when it should be absent"
 
-        print(f"  FAIL: {json_path} present in {tool_name} input when it should be absent")
-        return False
-
-    def assert_question_count_max(self, max_questions: int) -> bool:
-        """Assert at most N questions asked (heuristic: user role messages)."""
-        question_count = 0
-
+    def assert_question_count_max(self, max_questions: int) -> (bool, str):
+        count = 0
         for msg in self.messages:
-            role = msg.get("message", {}).get("role", "")
-            if role == "assistant":
-                content = msg.get("message", {}).get("content", [])
-                for item in content:
-                    if item.get("type") == "text":
-                        text = item.get("text", "")
-                        # Heuristic: question ends with ?
-                        if "?" in text:
-                            question_count += 1
-                            break  # Count once per message
+            if msg.get("type") != "assistant":
+                continue
+            for item in msg.get("message", {}).get("content", []):
+                if item.get("type") == "text" and "?" in item.get("text", ""):
+                    count += 1
+                    break
+        return count <= max_questions, f"asked {count} questions, max {max_questions}"
 
-        if question_count > max_questions:
-            print(f"  FAIL: Asked {question_count} questions, max allowed {max_questions}")
-            return False
+    def assert_question_count(self, expected: int) -> (bool, str):
+        count = 0
+        for msg in self.messages:
+            if msg.get("type") != "assistant":
+                continue
+            for item in msg.get("message", {}).get("content", []):
+                if item.get("type") == "text" and "?" in item.get("text", ""):
+                    count += 1
+                    break
+        return count == expected, f"asked {count} questions, expected {expected}"
 
-        return True
+    def assert_filter_kind(self, kind: str) -> (bool, str):
+        calls = self.get_tool_calls("query-catalog-entities")
+        for call in calls:
+            filt = call.get("input", {}).get("filter", {})
+            if isinstance(filt, dict) and filt.get("kind") == kind:
+                return True, f"found catalog query with filter.kind={kind}"
+        return False, f"no catalog query filtered on kind={kind}"
 
-    def assert_fail_fast(self) -> bool:
-        """Assert no questions and no tool calls after a failing tool call."""
-        failed_tool_idx = None
+    # -- keyword-heuristic assertions (no mechanical trace available) -----
 
-        # Find first failed tool result
-        for idx, result in enumerate(self.tool_results):
-            if result.get("isError", False):
-                failed_tool_idx = idx
-                break
+    def _assistant_text_matches(self, patterns: List[str]) -> (bool, str):
+        text = self.assistant_text().lower()
+        for pattern in patterns:
+            if re.search(pattern, text):
+                return True, f"assistant text matched /{pattern}/"
+        return False, f"assistant text matched none of {patterns}"
 
-        if failed_tool_idx is None:
-            return True  # No failures
+    def assert_error_reported(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"not found", r"doesn't exist", r"no (matching )?template", r"couldn't find", r"\berror\b"]
+        )
+        return matched == expected, evidence
 
-        # Check no tool uses after failure
-        # This is approximate - we'd need to correlate by timestamp in real impl
-        # For now, just check that total tool uses is minimal after a failure
-        if len(self.tool_uses) > failed_tool_idx + 2:
-            print(f"  FAIL: Tool calls continued after failure")
-            return False
+    def assert_config_failure_message(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"configur", r"capabilit", r"not available", r"cannot proceed"]
+        )
+        return matched == expected, evidence
 
-        return True
+    def assert_auth_failure_message(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"auth", r"denied", r"permission", r"unauthorized"]
+        )
+        return matched == expected, evidence
 
-    def assert_max_tool_result_size(self, max_bytes: int) -> bool:
-        """Assert largest tool result is under byte ceiling."""
-        max_size = 0
+    def assert_empty_catalog_message(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"no templates?", r"empty catalog", r"catalog returned"]
+        )
+        return matched == expected, evidence
 
-        for result in self.tool_results:
-            content = result.get("content", [])
-            for item in content:
-                if item.get("type") == "text":
-                    text = item.get("text", "")
-                    size = len(text.encode('utf-8'))
-                    max_size = max(max_size, size)
+    def assert_refusal_message(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"cannot submit", r"won't", r"refuse", r"secret"]
+        )
+        return matched == expected, evidence
 
-        if max_size > max_bytes:
-            print(f"  FAIL: Largest tool result {max_size} bytes exceeds {max_bytes} limit")
-            return False
+    def assert_redirect_to_backstage_ui(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"backstage.{0,20}(ui|website|browser|portal)"]
+        )
+        return matched == expected, evidence
 
-        return True
+    def assert_task_failure_reported(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches([r"fail"])
+        return matched == expected, evidence
 
-    def assert_total_input_tokens_max(self, max_tokens: int) -> bool:
-        """Assert total fresh input tokens under ceiling."""
-        total = self.usage_total["input_tokens"]
-        if total > max_tokens:
-            print(f"  FAIL: Total input tokens {total} exceeds {max_tokens} limit")
-            return False
-        return True
+    def assert_confirmation_required(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches([r"confirm", r"proceed\?", r"submit\?"])
+        return matched == expected, evidence
 
-    def record_run_metadata(self, scenario_name: str, scenario: Dict, output_path: str):
-        """Record run metadata to runs.jsonl."""
-        record = {
-            "scenario": scenario_name,
-            "model": self.result_message.get("model") if self.result_message else None,
-            "usage": self.usage_total,
-            "stub_scenario": scenario.get("stub_scenario", "default"),
-            "skill_installed": True,  # Will be passed from runner
-            "timestamp": self.result_message.get("timestamp") if self.result_message else None
-        }
+    def assert_review_shown(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches([r"review"])
+        return matched == expected, evidence
 
-        with open(output_path, "a") as f:
-            f.write(json.dumps(record) + "\n")
+    def assert_completion(self, expected: bool) -> (bool, str):
+        ok = self.result_message is not None and not self.result_message.get("is_error", False)
+        return ok == expected, f"result_message present={self.result_message is not None}"
 
 
-def load_scenario(scenario_path: str) -> Dict:
-    """Load scenario file (simple YAML parsing)."""
-    scenario = {}
-    with open(scenario_path) as f:
-        for line in f:
-            line = line.strip()
-            if ": " in line:
-                key, value = line.split(": ", 1)
-                scenario[key] = value
-    return scenario
+def load_all_expectations(scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return scenario.get("expectations", [])
+
+
+def run_assertions(asserter: TranscriptAsserter, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Run each declared expectation, returning grading.json-shaped assertion_results."""
+    results = []
+    for expectation in expectations:
+        for key, value in expectation.items():
+            method_name = f"assert_{key}"
+            method = getattr(asserter, method_name, None)
+            if method is None:
+                results.append({
+                    "text": f"{key} = {value}",
+                    "passed": False,
+                    "evidence": f"no assertion implemented for '{key}'",
+                })
+                continue
+            try:
+                if key in ("tool_called", "tool_not_called", "filter_kind"):
+                    passed, evidence = method(value)
+                elif key == "tool_call_count_execute_template":
+                    passed, evidence = method("execute-template", value)
+                elif key == "catalog_queries_have_fields_and_limit":
+                    passed, evidence = method() if value else (True, "assertion opted out")
+                elif key == "json_path_absent":
+                    tool_name, _, path = value.partition(".") if isinstance(value, str) else ("", "", "")
+                    # json_path_absent value is "values.field"; tool is always execute-template here
+                    passed, evidence = method("execute-template", value)
+                else:
+                    passed, evidence = method(value)
+            except TypeError:
+                passed, evidence = method()
+            results.append({"text": f"{key}: {value}", "passed": passed, "evidence": evidence})
+    return results
+
+
+def write_grading(results: List[Dict[str, Any]], outdir: Path):
+    passed = sum(1 for r in results if r["passed"])
+    total = len(results)
+    grading = {
+        "assertion_results": results,
+        "summary": {
+            "passed": passed,
+            "failed": total - passed,
+            "total": total,
+            "pass_rate": (passed / total) if total else 1.0,
+        },
+    }
+    outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "grading.json").write_text(json.dumps(grading, indent=2) + "\n")
+    return grading
+
+
+def actual_model(asserter: TranscriptAsserter) -> Optional[str]:
+    """Model actually used, read from the result message's modelUsage keys
+    rather than what was requested - a request can be silently substituted."""
+    if not asserter.result_message:
+        return None
+    model_usage = asserter.result_message.get("modelUsage") or {}
+    if model_usage:
+        return next(iter(model_usage))
+    return asserter.result_message.get("model")
+
+
+def write_timing(asserter: TranscriptAsserter, outdir: Path):
+    usage = asserter.usage_total
+    total_tokens = sum(usage.values())
+    duration_ms = 0
+    if asserter.result_message:
+        duration_ms = asserter.result_message.get("duration_ms", 0)
+    timing = {
+        "total_tokens": total_tokens,
+        "duration_ms": duration_ms,
+        "input_tokens": usage["input_tokens"],
+        "output_tokens": usage["output_tokens"],
+        "cache_creation_input_tokens": usage["cache_creation_input_tokens"],
+        "cache_read_input_tokens": usage["cache_read_input_tokens"],
+    }
+    outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "timing.json").write_text(json.dumps(timing, indent=2) + "\n")
+    return timing
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: check.py <scenario.yaml> <transcript.jsonl>")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("scenario_path")
+    parser.add_argument("transcript_path")
+    parser.add_argument("--outdir", help="Write grading.json/timing.json here (agentskills workspace arm dir)")
+    args = parser.parse_args()
+
+    if not Path(args.transcript_path).exists():
+        print(f"ERROR: Transcript not found: {args.transcript_path}")
         sys.exit(1)
 
-    scenario_path = sys.argv[1]
-    transcript_path = sys.argv[2]
+    scenario = load_scenario(args.scenario_path)
+    asserter = TranscriptAsserter(args.transcript_path)
 
-    if not Path(transcript_path).exists():
-        print(f"ERROR: Transcript not found: {transcript_path}")
-        sys.exit(1)
+    print(f"Checking: {Path(args.scenario_path).stem}")
 
-    scenario = load_scenario(scenario_path)
-    asserter = TranscriptAsserter(transcript_path)
+    expectations = load_all_expectations(scenario)
+    results = run_assertions(asserter, expectations)
 
-    print(f"Checking: {Path(scenario_path).stem}")
+    for r in results:
+        status = "PASS" if r["passed"] else "FAIL"
+        print(f"  {status}: {r['text']} ({r['evidence']})")
 
-    # Run assertions based on scenario expectations
-    # These would be read from the scenario file in real implementation
-    # For now, run a default set
+    if args.outdir:
+        outdir = Path(args.outdir)
+        outdir.mkdir(parents=True, exist_ok=True)
+        (outdir / "outputs").mkdir(exist_ok=True)
+        write_grading(results, outdir)
+        write_timing(asserter, outdir)
 
-    passed = True
-
-    # Default assertions for all scenarios
-    if "query-catalog-entities" in str(asserter.tool_uses):
-        if not asserter.assert_catalog_queries_have_fields_and_limit():
-            passed = False
-
-    # Specific assertion examples (would come from scenario file)
-    # passed = passed and asserter.assert_tool_called("execute-template")
-    # passed = passed and asserter.assert_question_count_max(10)
-
-    if passed:
-        print("  PASS: All assertions passed")
-    else:
+    if results and not all(r["passed"] for r in results):
         print("  FAIL: Some assertions failed")
         sys.exit(1)
-
-    # Record metadata
-    runs_file = Path(transcript_path).parent / "runs.jsonl"
-    asserter.record_run_metadata(Path(scenario_path).stem, scenario, str(runs_file))
+    print("  PASS: All assertions passed")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,152 @@
+version: '3'
+
+vars:
+  TESTS: '{{.TESTS | default ""}}'
+  TIER: '{{.TIER | default ""}}'
+  TYPE: '{{.TYPE | default ""}}'
+  FEATURE: '{{.FEATURE | default ""}}'
+  MODEL: '{{.MODEL | default ""}}'
+  EFFORT: '{{.EFFORT | default ""}}'
+  A: '{{.A | default ""}}'
+  B: '{{.B | default ""}}'
+
+env:
+  MODEL: '{{.MODEL}}'
+  EFFORT: '{{.EFFORT}}'
+
+tasks:
+  test:
+    desc: "Default gate: guards + cheap tier-1 paired compare"
+    cmds:
+      - task: test:guards
+      - task: test:compare:tier1
+
+  test:guards:
+    desc: "Genericity grep + SKILL.md line-budget gate (no docker run)"
+    cmds:
+      - |
+        set -euo pipefail
+        FORBIDDEN_PATTERNS=(
+          "aws-lambda-api" "aws-lambda-cron" "aws-lambda-sqs"
+          "springboot-microservice" "locust-python-boilerplate"
+          "cron-automated-test" "github-repo" "mcp-server"
+          "ephemeral-environments"
+        )
+        FAILED=false
+        for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+          if grep -r "$pattern" skills/hc-scaffold-service/ --exclude-dir=evals 2>/dev/null; then
+            echo "ERROR: Found forbidden pattern '$pattern' in skill package"
+            FAILED=true
+          fi
+        done
+        $FAILED && exit 1
+        echo "PASS: No template names in skill package"
+        SKILL_LINES=$(wc -l < skills/hc-scaffold-service/SKILL.md)
+        if [[ $SKILL_LINES -gt 400 ]]; then
+          echo "FAIL: SKILL.md has $SKILL_LINES lines (hard limit: 400)"
+          exit 1
+        fi
+        echo "PASS: SKILL.md has $SKILL_LINES lines (within 400 limit)"
+
+  test:list:
+    desc: "Print name tier type feature for compare:true scenarios"
+    cmds:
+      - python3 test/scenario_lib.py --dir test/scenarios
+
+  test:scenario:
+    desc: "Run scenario(s) with the skill installed (TESTS=name1,name2 or all)"
+    cmds:
+      - ./test/run.sh {{if .TESTS}}{{.TESTS | splitList "," | join " "}}{{end}}
+
+  test:scenario:no-skill:
+    desc: "Run scenario(s) without the skill installed (baseline)"
+    cmds:
+      - ./test/run.sh --no-skill {{if .TESTS}}{{.TESTS | splitList "," | join " "}}{{end}}
+
+  test:compare:
+    desc: "Paired with-skill/without-skill A/B for the selected scenarios; writes workspace + benchmark.json"
+    cmds:
+      - >-
+        python3 test/assertions/write_workspace.py
+        {{if .TIER}}--tier {{.TIER}}{{end}}
+        {{if .TYPE}}--type {{.TYPE}}{{end}}
+        {{if .FEATURE}}--feature {{.FEATURE}}{{end}}
+        {{if .TESTS}}--tests {{.TESTS}}{{end}}
+        {{if .MODEL}}--model {{.MODEL}}{{end}}
+        {{if .EFFORT}}--effort {{.EFFORT}}{{end}}
+
+  test:compare:tier1:
+    desc: "Cheap paired A/B: tier 1 (fail-fast) scenarios only"
+    cmds:
+      - task: test:compare
+        vars: {TIER: "1"}
+
+  test:compare:tier:
+    desc: "Paired A/B filtered by TIER (required)"
+    preconditions:
+      - sh: '[ -n "{{.TIER}}" ]'
+        msg: "TIER is required, e.g. task test:compare:tier TIER=1,2"
+    cmds:
+      - task: test:compare
+        vars: {TIER: '{{.TIER}}'}
+
+  test:compare:type:
+    desc: "Paired A/B filtered by TYPE (required)"
+    preconditions:
+      - sh: '[ -n "{{.TYPE}}" ]'
+        msg: "TYPE is required, e.g. task test:compare:type TYPE=preflight"
+    cmds:
+      - task: test:compare
+        vars: {TYPE: '{{.TYPE}}'}
+
+  test:compare:feature:
+    desc: "Paired A/B filtered by FEATURE (required)"
+    preconditions:
+      - sh: '[ -n "{{.FEATURE}}" ]'
+        msg: "FEATURE is required, e.g. task test:compare:feature FEATURE=fail-fast"
+    cmds:
+      - task: test:compare
+        vars: {FEATURE: '{{.FEATURE}}'}
+
+  test:compare:tests:
+    desc: "Paired A/B filtered by TESTS (required)"
+    preconditions:
+      - sh: '[ -n "{{.TESTS}}" ]'
+        msg: "TESTS is required, e.g. task test:compare:tests TESTS=plain-request,time-pressure"
+    cmds:
+      - task: test:compare
+        vars: {TESTS: '{{.TESTS}}'}
+
+  test:diff:
+    desc: "Diff two benchmark.json files (A= and B= required)"
+    preconditions:
+      - sh: '[ -n "{{.A}}" ] && [ -n "{{.B}}" ]'
+        msg: "A and B are required, e.g. task test:diff A=test/workspace/iteration-1/benchmark.json B=test/workspace/iteration-2/benchmark.json"
+    cmds:
+      - python3 test/assertions/diff_compare.py "{{.A}}" "{{.B}}"
+
+  test:evals:sync:
+    desc: "Regenerate skills/hc-scaffold-service/evals/{evals.json,scenario-map.json} from test/scenarios/*.yaml"
+    cmds:
+      - python3 test/scripts/sync_evals.py
+
+  test:evals:check:
+    desc: "Fail if test:evals:sync would change evals.json/scenario-map.json"
+    cmds:
+      - python3 test/scripts/sync_evals.py --check
+
+  test:skill-creator:install:
+    desc: "Print the skill-creator plugin install command"
+    cmds:
+      - echo "/plugin install skill-creator@claude-plugins-official"
+      - echo "/reload-plugins"
+
+  test:skill-creator:eval:
+    desc: "Print the prompt to evaluate this skill with skill-creator"
+    cmds:
+      - echo "Evaluate my hc-scaffold-service skill with skill-creator using skills/hc-scaffold-service/evals/evals.json"
+
+  test:skill-creator:triggers:
+    desc: "Print the prompt to tune the skill description with skill-creator using triggers.json"
+    cmds:
+      - echo "Tune the description of my hc-scaffold-service skill with skill-creator using skills/hc-scaffold-service/evals/triggers.json"

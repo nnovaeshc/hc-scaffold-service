@@ -1,7 +1,13 @@
 name: synthetic-tenth
 description: Synthetic tenth template, checking it completes unseen
+compare: true
+tier: 3
+type: interview
+feature: schema-walk
 stub_scenario: default
 prompt: /hc-scaffold-service Create a component using synthetic-tenth-template
+compare_prompt: Create a component using synthetic-tenth-template
+expected_output: The assistant handles the synthetic template's unfamiliar schema constructs correctly and completes the flow, successfully calling execute-template with well-formed catalog queries.
 expectations:
   - tool_called: execute-template
   - completion: true

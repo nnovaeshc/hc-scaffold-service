@@ -86,12 +86,14 @@ test/
 │   ├── templates/           # 9 real templates + 1 synthetic
 │   ├── groups/              # catalog Group entities
 │   └── task-logs/           # success and mid-run-failure log sequences
-├── scenarios/               # one file per scenario: prompt + expectations
+├── scenarios/               # one file per scenario: prompt + expectations + compare labels
 ├── assertions/check.py      # the transcript oracle
 ├── baseline/                # recorded failures from running without the skill
-├── results/runs.jsonl       # one record per run: model, effort, tokens, cost
+├── workspace/iteration-N/   # agentskills-compatible paired-run artifacts + benchmark.json
 └── run.sh
 ```
+
+`Taskfile.yml` at the repo root is the only documented entry point into this directory; `skills/hc-scaffold-service/evals/` holds the skill-creator-compatible `evals.json` / `triggers.json` generated from `test/scenarios/*.yaml` via `task test:evals:sync`. See [align-tests-skill-creator.md](align-tests-skill-creator.md) for the full task list and schemas.
 
 ## The sandbox
 
@@ -132,17 +134,21 @@ When a real template starts using a construct the synthetic one does not cover, 
 
 ## Running
 
+Operator entry point is `task ...` only — see [align-tests-skill-creator.md](align-tests-skill-creator.md) §1.3 for why `test/run.sh` stays an implementation detail behind the Taskfile.
+
 ```bash
-cd test && ./run.sh              # all scenarios, with the skill
-./run.sh --without-skill         # baseline: how the model behaves unaided
-./run.sh --scenario time-pressure
-./run.sh --model <slug>          # override the model; recorded in results
+task test                        # guards + tier-1 compare (fast default)
+task test:scenario                          # all scenarios, with the skill
+task test:scenario:no-skill                 # baseline: how the model behaves unaided
+task test:scenario TESTS=time-pressure      # one scenario
+task test:scenario MODEL=<slug>             # override the model; recorded in results
+task test:compare                           # full paired A/B; writes workspace + benchmark.json
+task test:compare:tier1                     # cheap paired A/B (tier 1 only)
 ```
 
-`run.sh` currently implements the baseline arm as `--no-skill`; `--without-skill` is the intended alias
-and the arm is still being wired up — see [skill-vs-baseline.md](skill-vs-baseline.md) §5.1.
+`task test:guards` runs the package guards: a grep genericity scan over **all files** under `skills/hc-scaffold-service/`, and a `wc -l` line-budget check on `SKILL.md` (≤400). Those are part of the suite, not separate steps.
 
-`run.sh` also runs the package guards: a grep genericity scan over **all files** under `skills/hc-scaffold-service/`, and a `wc -l` line-budget check on `SKILL.md` (≤400). Those are part of the suite, not separate steps.
+See [skill-vs-baseline.md](skill-vs-baseline.md) for the full compare CLI and [align-tests-skill-creator.md](align-tests-skill-creator.md) for the Taskfile task list, evals sync, and workspace/`benchmark.json` schemas.
 
 ## Red first
 
@@ -169,17 +175,17 @@ An advisory LLM judge covers the one thing with no mechanical trace: whether an 
 
 ## Measurement
 
-Every run appends one JSON object to `test/results/runs.jsonl`. A green suite is meaningless without knowing what produced it: the same prompt on a smaller model, or with less thinking budget, is a different experiment.
+Every paired run writes a `timing.json` and `grading.json` per arm under `test/workspace/iteration-<N>/eval-<scenario>/{with_skill,without_skill}/`, rolled up into a top-level `benchmark.json`. A green suite is meaningless without knowing what produced it: the same prompt on a smaller model, or with less thinking budget, is a different experiment.
 
 Recorded per run:
 
 - **model actually used**, read from `message.model` in the transcript rather than from what was requested — a request can be silently substituted, and the substitution is exactly what you want to catch
 - **thinking or effort configuration** in force
-- **token counts**: `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`
+- **token counts**: `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens` (`timing.json`)
 - **cost, wall-clock duration, and turn count**
-- **Claude Code version, the skill's git commit SHA**, the stub scenario, and whether the skill was installed
+- **the skill's git commit SHA** (`benchmark.json`), the stub scenario, and whether the skill was installed
 
-That last group is what separates a reproducible result from an anecdote. A `runs.jsonl` entry without a version and a SHA cannot be compared against anything later.
+That last group is what separates a reproducible result from an anecdote. A `benchmark.json` without a skill SHA cannot be compared against anything later. See [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.4–§2.7 for exact schemas.
 
 Two different jobs here, and they should not be confused. The **byte ceiling on `tool_result` payloads is the deterministic gate** — it is independent of tokenizer and caching behaviour, so it fails only when the skill genuinely fetched too much. **Token counts are a trend and cost record**, with a deliberately generous ceiling as a regression tripwire; a tight bound would produce false failures every time caching behaviour or the model changes.
 
@@ -187,7 +193,7 @@ The runner takes the model as a parameter, so key scenarios can be run across mo
 
 ## Adding a scenario
 
-Write the prompt and its expectations in `test/scenarios/`. Run it without the skill first and record what happens. If it already passes unaided, it is not testing anything — either make the pressure real or drop it. Then run it with the skill and iterate.
+Write the prompt and its expectations in `test/scenarios/`, including the `compare`/`tier`/`type`/`feature`/`expected_output` fields (see [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.1). Run it without the skill first and record what happens. If it already passes unaided, it is not testing anything — either make the pressure real or drop it. Then run it with the skill and iterate. Run `task test:evals:sync` afterward so `skills/hc-scaffold-service/evals/evals.json` picks up the new case; `task test:evals:check` fails CI on drift.
 
 **Commit the scenario (and baseline) before editing the skill.** Scenario files and skill package changes are separate commits — see [implementation-plan.md](implementation-plan.md) §2 and [maintaining.md](maintaining.md).
 

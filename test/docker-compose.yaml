@@ -10,7 +10,7 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_SESSION_TOKEN
       - MCP_SERVERS_TEMPLATE=/work/test/mcp-servers.test.yaml
-      - SKILLS_TEMPLATE=/work/test/skills.test.yaml
+      - SKILLS_TEMPLATE=${SKILLS_TEMPLATE:-/work/test/skills.test.yaml}
       - STUB_SCENARIO=${STUB_SCENARIO:-default}
       - CLAUDE_CODE_USE_BEDROCK=1
       - AWS_REGION=us-east-1

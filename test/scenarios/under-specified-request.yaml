@@ -1,7 +1,12 @@
 name: under-specified-request
 description: Under-specified request, checking owner resolves to a real Group
+compare: true
+tier: 3
+type: interview
+feature: inference
 stub_scenario: default
 prompt: Create a new service for processing data files
+expected_output: The assistant queries the catalog for a real Group entity to resolve the owning team, rather than guessing, and successfully calls execute-template with well-formed catalog queries.
 expectations:
   - tool_called: query-catalog-entities
   - filter_kind: Group
