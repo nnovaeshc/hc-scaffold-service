@@ -29,6 +29,8 @@ wheels/
 test/results/
 test/baseline/
 test/*.log
+test/workspace/**/transcript.jsonl
+test/workspace/**/outputs/
 
 # IDE
 .vscode/

@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "benchmark.json",
+  "type": "object",
+  "required": ["schema_version", "skill_sha", "model", "filters", "scenarios", "run_summary", "per_scenario"],
+  "properties": {
+    "schema_version": {"type": "integer"},
+    "skill_sha": {"type": "string"},
+    "model": {"type": "string"},
+    "effort": {"type": ["string", "null"]},
+    "filters": {
+      "type": "object",
+      "required": ["tiers", "types", "features", "tests"],
+      "properties": {
+        "tiers": {"type": "array"},
+        "types": {"type": "array"},
+        "features": {"type": "array"},
+        "tests": {"type": "array"}
+      }
+    },
+    "scenarios": {"type": "array", "items": {"type": "string"}},
+    "run_summary": {
+      "type": "object",
+      "required": ["with_skill", "without_skill", "delta"],
+      "properties": {
+        "with_skill": {"$ref": "#/definitions/arm_summary"},
+        "without_skill": {"$ref": "#/definitions/arm_summary"},
+        "delta": {
+          "type": "object",
+          "required": ["pass_rate", "time_seconds", "tokens"],
+          "properties": {
+            "pass_rate": {"type": "number"},
+            "time_seconds": {"type": "number"},
+            "tokens": {"type": "number"}
+          }
+        }
+      }
+    },
+    "per_scenario": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "with_skill_pass", "without_skill_pass", "pass_delta"],
+        "properties": {
+          "name": {"type": "string"},
+          "with_skill_pass": {"type": "boolean"},
+          "without_skill_pass": {"type": "boolean"},
+          "pass_delta": {"type": "integer"}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "arm_summary": {
+      "type": "object",
+      "required": ["pass_rate", "time_seconds", "tokens"],
+      "properties": {
+        "pass_rate": {"type": "object", "required": ["mean"], "properties": {"mean": {"type": "number"}}},
+        "time_seconds": {"type": "object", "required": ["mean"], "properties": {"mean": {"type": "number"}}},
+        "tokens": {"type": "object", "required": ["mean"], "properties": {"mean": {"type": "number"}}}
+      }
+    }
+  }
+}
