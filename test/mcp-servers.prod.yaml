@@ -1,0 +1,9 @@
+mcpServers:
+  backstage:
+    enabled: true
+    transport: http
+    url: https://mcp-gateway.platform.healthcare.com/api/mcp-actions/v1
+  github:
+    enabled: false
+  atlassian:
+    enabled: false
