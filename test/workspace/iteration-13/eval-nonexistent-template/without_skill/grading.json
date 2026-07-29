@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: query-catalog-entities",
+      "passed": true,
+      "evidence": "tool_use name~=query-catalog-entities found=True"
+    },
+    {
+      "text": "tool_not_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "error_reported: True",
+      "passed": true,
+      "evidence": "assistant text matched /does not exist/"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: get-catalog-entity",
+      "passed": true,
+      "evidence": "tool_use name~=get-catalog-entity found=True"
+    },
+    {
+      "text": "tool_not_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "destination_scope_reported: True",
+      "passed": true,
+      "evidence": "assistant text matched /personal account/"
+    },
+    {
+      "text": "destination_scope_offer: True",
+      "passed": true,
+      "evidence": "assistant text matched /outside backstage/"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

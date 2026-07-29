@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: get-catalog-entity",
+      "passed": false,
+      "evidence": "tool_use name~=get-catalog-entity found=False"
+    },
+    {
+      "text": "tool_not_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "destination_scope_reported: True",
+      "passed": true,
+      "evidence": "assistant text matched /personal account/"
+    },
+    {
+      "text": "destination_scope_offer: True",
+      "passed": false,
+      "evidence": "assistant text matched none of ['create it there', 'outside backstage', 'hand[- ]?off', '\\\\bgh cli\\\\b', 'github mcp', 'aws cli', 'proceed (under|with|here)', 'or handle']"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  }
+}

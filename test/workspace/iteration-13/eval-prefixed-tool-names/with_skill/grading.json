@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: query-catalog-entities",
+      "passed": true,
+      "evidence": "tool_use name~=query-catalog-entities found=True"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "5 catalog queries all carry fields+limit"
+    },
+    {
+      "text": "backstage_tools_prefixed: True",
+      "passed": true,
+      "evidence": "prefixed=['mcp__backstage__backstage_catalog_query-catalog-entities', 'mcp__backstage__backstage_catalog_get-catalog-entity', 'mcp__backstage__backstage_catalog_query-catalog-entities'] backstage_tools=['mcp__backstage__backstage_catalog_query-catalog-entities', 'mcp__backstage__backstage_catalog_get-catalog-entity', 'mcp__backstage__backstage_catalog_query-catalog-entities', 'mcp__backstage__backstage_catalog_query-catalog-entities', 'mcp__backstage__backstage_catalog_query-catalog-entities']"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

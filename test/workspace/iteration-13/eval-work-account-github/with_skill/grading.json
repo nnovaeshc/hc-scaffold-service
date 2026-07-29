@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: get-catalog-entity",
+      "passed": true,
+      "evidence": "tool_use name~=get-catalog-entity found=True"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "destination_scope_reported: False",
+      "passed": true,
+      "evidence": "assistant text matched none of ['personal account', 'outside backstage', 'cannot target', 'can only create', 'not.{0,15}personal', 'outside (of )?what (the|this) template', 'allowedOwners?', 'not (in|among) (the )?(allowed|permitted)', 'only (allows?|supports?) .{0,40}healthcarecom']"
+    },
+    {
+      "text": "submitted_value_matches: values.repoUrl=.*healthcarecom.*",
+      "passed": true,
+      "evidence": "values.repoUrl='github.com?owner=healthcarecom&repo=billing-service' vs /.*healthcarecom.*/ matched=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}
