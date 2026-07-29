@@ -98,6 +98,8 @@ Each entry is a decision, why, and what was rejected. Reopen one only with a rea
 
 **Client-side test oracle.** Assertions read the `claude -p --output-format stream-json` transcript and never the stub's internals. Rejected: assertions over a recording stub, which would only ever work against the stub. Reading the transcript means one suite runs unchanged against both the stub and production.
 
+**Harness sized by behavioural claims.** One scenario per claim the skill makes, each recorded failing unaided before the rule that fixes it is written. Published guidance sets a floor of three evaluations and no ceiling, so the count comes from the artifact. Rejected: a suite at that published minimum, which would leave most of the skill's claims unverified; and scenarios written from imagined failure modes, which is what the evaluation-first loop exists to prevent. See [testing.md](testing.md).
+
 **Deterministic assertions gate; the LLM judge advises.** Rejected: an LLM judge as primary oracle, which is flaky exactly at the pass/fail boundary. Also rejected: golden transcript snapshots, which churn with every model update.
 
 **A stdio stub, not HTTP.** Transport is invisible to the skill — only tool names and schemas matter — so the simpler option wins. Rejected: an HTTP stub matching production transport, which buys fidelity the skill cannot observe at the cost of a server, a port and TLS. Also rejected for now: record/replay against production, which requires working production access before any test can run.
