@@ -153,6 +153,14 @@ for scenario in "${SCENARIOS[@]}"; do
 
   echo "==> Running scenario: $scenario"
 
+  cache_key=$(python3 test/cache.py key "$scenario_file" "$INSTALL_SKILL" --model "$MODEL" --effort "$EFFORT")
+  if cached_result=$(python3 test/cache.py get "$cache_key" 2>/dev/null); then
+    cached_pass=$(python3 -c "import json,sys; print('true' if json.loads(sys.argv[1])['pass'] else 'false')" "$cached_result")
+    echo "  CACHED: $([[ "$cached_pass" == "true" ]] && echo PASS || echo FAIL)"
+    echo
+    continue
+  fi
+
   # Extract prompt and stub scenario from yaml
   # Simple extraction - assumes prompt:, compare_prompt: and stub_scenario: are on their own lines
   prompt=$(sed -n 's/^prompt: //p' "$scenario_file")
@@ -179,6 +187,7 @@ for scenario in "${SCENARIOS[@]}"; do
 
   # Run in docker
   transcript_file="test/results/${scenario}-transcript.jsonl"
+  result_dir="test/results/${scenario}"
   export STUB_SCENARIO="$stub_scenario"
 
   docker-compose -f test/docker-compose.yaml run --rm ai-tdd \
@@ -187,7 +196,23 @@ for scenario in "${SCENARIOS[@]}"; do
   # Run assertions
   if [[ -f test/assertions/check.py ]]; then
     echo "  Checking assertions..."
-    python3 test/assertions/check.py "$scenario_file" "$transcript_file"
+    python3 test/assertions/check.py "$scenario_file" "$transcript_file" --outdir "$result_dir"
+    python3 - "$cache_key" "$result_dir" <<'PYEOF'
+import json, sys
+from pathlib import Path
+sys.path.insert(0, "test")
+import cache
+
+key, result_dir = sys.argv[1], Path(sys.argv[2])
+grading = json.loads((result_dir / "grading.json").read_text())
+timing = json.loads((result_dir / "timing.json").read_text())
+cache.put(key, {
+    "grading": grading,
+    "timing": timing,
+    "pass": grading["summary"]["failed"] == 0,
+    "model": None,
+})
+PYEOF
   fi
 
   echo

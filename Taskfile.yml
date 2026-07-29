@@ -148,6 +148,11 @@ tasks:
     cmds:
       - python3 test/scripts/generate_report.py
 
+  test:cache:clear:
+    desc: "Wipe the local eval-result cache (test/.cache/)"
+    cmds:
+      - rm -rf test/.cache
+
   test:skill-creator:install:
     desc: "Print the skill-creator plugin install command"
     cmds:

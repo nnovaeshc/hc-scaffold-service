@@ -31,6 +31,7 @@ test/baseline/
 test/*.log
 test/workspace/**/transcript.jsonl
 test/workspace/**/outputs/
+test/.cache/
 
 # IDE
 .vscode/

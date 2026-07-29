@@ -148,6 +148,8 @@ task test:compare:tier1                     # cheap paired A/B (tier 1 only)
 
 `task test:guards` runs the package guards: a grep genericity scan over **all files** under `skills/hc-scaffold-service/`, and a `wc -l` line-budget check on `SKILL.md` (≤400). Those are part of the suite, not separate steps.
 
+Each scenario × arm (with-skill/without-skill) result is cached locally in `test/.cache/`, keyed on the skill content, that scenario's YAML, fixtures, and harness/grading code, plus model/effort. Unchanged inputs replay the cached PASS/FAIL instead of re-running docker + a live Bedrock call. `task test:cache:clear` wipes it.
+
 See [skill-vs-baseline.md](skill-vs-baseline.md) for the full compare CLI and [align-tests-skill-creator.md](align-tests-skill-creator.md) for the Taskfile task list, evals sync, and workspace/`benchmark.json` schemas.
 
 ## Red first

@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO_ROOT / "test" / "assertions"))
 from check import (  # noqa: E402
     TranscriptAsserter, actual_model, load_all_expectations, run_assertions, write_grading, write_timing,
 )
+import cache  # noqa: E402
 
 
 def next_iteration(workspace_dir: Path) -> int:
@@ -49,6 +50,14 @@ def export_aws_credentials(env: dict):
 
 
 def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict, arm_dir: Path) -> dict:
+    key = cache.compute_key(Path(scenario["_path"]), with_skill, model, effort)
+    cached = cache.get(key)
+    if cached is not None:
+        arm_dir.mkdir(parents=True, exist_ok=True)
+        (arm_dir / "grading.json").write_text(json.dumps(cached["grading"], indent=2) + "\n")
+        (arm_dir / "timing.json").write_text(json.dumps(cached["timing"], indent=2) + "\n")
+        return cached
+
     prompt = scenario["prompt"] if with_skill else fair_prompt(scenario)
     stub_scenario = scenario.get("stub_scenario", "default")
 
@@ -86,12 +95,15 @@ def run_arm(scenario: dict, with_skill: bool, model: str, effort: str, env: dict
     results = run_assertions(asserter, expectations)
     grading = write_grading(results, arm_dir)
     timing = write_timing(asserter, arm_dir)
-    return {
+    result = {
         "grading": grading,
         "timing": timing,
         "pass": grading["summary"]["failed"] == 0,
         "model": actual_model(asserter),
+        "cached": False,
     }
+    cache.put(key, result)
+    return result
 
 
 def mean(values):
@@ -151,6 +163,10 @@ def build_benchmark(scenarios, per_scenario, filters, skill_sha, requested_model
                 "grading_summaries": {
                     "with_skill": r["with_skill"]["grading"]["summary"],
                     "without_skill": r["without_skill"]["grading"]["summary"],
+                },
+                "cached": {
+                    "with_skill": r["with_skill"].get("cached", False),
+                    "without_skill": r["without_skill"].get("cached", False),
                 },
             }
             for r in per_scenario
@@ -244,11 +260,11 @@ def main():
 
         print("    with_skill...")
         with_result = run_arm(scenario, True, args.model, args.effort, env, eval_dir / "with_skill")
-        print(f"    with_skill: {'PASS' if with_result['pass'] else 'FAIL'}")
+        print(f"    with_skill: {'CACHED ' if with_result.get('cached') else ''}{'PASS' if with_result['pass'] else 'FAIL'}")
 
         print("    without_skill...")
         without_result = run_arm(scenario, False, args.model, args.effort, env, eval_dir / "without_skill")
-        print(f"    without_skill: {'PASS' if without_result['pass'] else 'FAIL'}")
+        print(f"    without_skill: {'CACHED ' if without_result.get('cached') else ''}{'PASS' if without_result['pass'] else 'FAIL'}")
 
         per_scenario.append({"name": name, "with_skill": with_result, "without_skill": without_result})
 
