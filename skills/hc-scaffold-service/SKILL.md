@@ -97,7 +97,9 @@ Present matching templates from the catalog query (you already have the list fro
 
 If the user named a specific template, verify it exists. If it does not exist in the catalog, report that and stop - never invent a template name from memory.
 
-Confirm the template choice explicitly.
+**If step 2 noted an explicit destination:** pick the best catalog match **without asking**, then immediately fetch the schema (step 4) and finish destination scope (step 6) before any user-facing question. Template confirmation waits until destination is resolved (in-scope, user chose the allowed destination, or hand-off).
+
+**Otherwise:** confirm the template choice explicitly before continuing.
 
 ### 4. Fetch Full Template Schema
 
@@ -271,6 +273,7 @@ Task submitted: https://backstage.platform.healthcare.com/scaffolder/tasks/[task
 | **NEVER** proceed with secrets-declaring templates | Refuse and redirect to Backstage UI |
 | **NEVER** submit a value that violates a declared schema constraint | Submission is one-shot and cannot be retried; the scaffolder has side effects |
 | **NEVER** enforce a constraint the schema does not declare | Invented rules block legal values on templates the skill has never seen |
+| **NEVER** ask the user anything after noting an explicit destination until `get-catalog-entity` has run and destination scope (step 6) is checked | Template-confirm questions hide out-of-scope destinations behind an earlier gate |
 | **NEVER** silently substitute a constraint-pinned destination for one the user explicitly named outside it | The user asked for a destination Backstage cannot produce; silently rerouting hides that from them |
 | **ALWAYS** match tools by capability, not exact name | Gateway prefixing and configuration flags change tool names |
 | **ALWAYS** read `reference.md` after fetching the template entity and before classifying parameters | The dialect details live there |
@@ -290,7 +293,7 @@ This table shows why defaults fail and what rule prevents each failure:
 | Secrets refusal | Asks user to provide secrets in chat | Secrets pass through LLM context | Scan for secrets fields; refuse before asking |
 | Collision check | Asks all questions then submits | Task fails because name already taken | Check catalog and GitHub before asking |
 | Constraint validation | Submits whatever was typed, assuming the scaffolder will validate | Task fails mid-run after side effects, and no retry is allowed | Validate at answer time and again before submit |
-| Destination scope check | Silently creates the resource under the org-pinned account/owner despite an explicit personal-account ask | Surprise ownership - the user's stated destination was ignored without them knowing | Check destination scope before classification; ask instead of substituting |
+| Destination scope check | Silently creates under the org-pinned account/owner, **or** asks to confirm the template before fetching schema / checking scope | Surprise ownership, or the destination-scope stop never runs | When an explicit destination was noted: fetch entity and check scope before any question; ask instead of substituting |
 | Explicit confirmation | Submits immediately after gathering values | User has no chance to review or abort | Two-gate confirmation (ownership + submission) |
 | No auto-resubmit | Retries task after failure | Re-runs side effects, creates duplicates | On failure, report and stop |
 | Precedent over hardcoding | Encodes "team X owns account Y" | Breaks when teams or accounts change | Query catalog for precedent; never hardcode business logic |
