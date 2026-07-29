@@ -16,7 +16,23 @@ Create a new service or component from a Backstage software template through con
 
 ## Workflow
 
-Follow this checklist in order. Stop immediately on any failure.
+Copy this checklist and check off each step as you complete it. Follow it in order. Stop immediately on any failure.
+
+```
+Scaffold Progress:
+- [ ] 1. Preflight: verify MCP access (before asking anything)
+- [ ] 2. Understand intent
+- [ ] 3. Select template
+- [ ] 4. Fetch full template schema
+- [ ] 5. Check for secrets
+- [ ] 6. Classify parameters
+- [ ] 7. Collision check
+- [ ] 8. Ask only the gaps
+- [ ] 9. Review before submission
+- [ ] 10. Confirm ownership and submission
+- [ ] 11. Submit
+- [ ] 12. Report task URL immediately
+```
 
 ### 1. Preflight: Verify MCP Access (BEFORE asking anything)
 
