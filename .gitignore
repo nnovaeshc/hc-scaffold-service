@@ -28,6 +28,7 @@ wheels/
 # Test output
 test/results/
 test/baseline/
+test/*.log
 
 # IDE
 .vscode/
