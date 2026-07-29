@@ -4,7 +4,7 @@ Maintainer-facing. How to change this skill without breaking the properties it w
 
 ## Agent entry and build order
 
-Until implementation is finished, [implementation-plan.md](implementation-plan.md) is the source of truth for build order. [CLAUDE.md](../CLAUDE.md) (created as plan task T1) points agents there.
+Until implementation is finished, [implementation-plan.md](implementation-plan.md) is the source of truth for build order. [CLAUDE.md](../CLAUDE.md) (created as plan task T1) points agents there. Testing-harness build order and schemas specifically live in [align-tests-skill-creator.md](align-tests-skill-creator.md).
 
 **Atomic commits are mandatory** for implementers and maintainers evolving this repo: one task / feature / test per commit; one logical change per commit; commit before starting the next task; never squash a green task into a later mega-commit. See §2 of the implementation plan.
 
@@ -34,12 +34,13 @@ These guards exist because genericity degrades invisibly. Nothing breaks the day
 
 ## Making a change
 
-1. **Write the failing scenario first.** Add it to `test/scenarios/` and run with `--without-skill` to see how the model behaves unaided. If it already does the right thing, you do not need a rule. **Commit** the scenario (and baseline recording) before editing the skill.
+1. **Write the failing scenario first.** Add it to `test/scenarios/` (with `compare`/`tier`/`type`/`feature`/`expected_output` — see [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.1) and run `task test:scenario:no-skill` to see how the model behaves unaided. If it already does the right thing, you do not need a rule. **Commit** the scenario (and baseline recording) before editing the skill.
 2. **Record the failure verbatim** in `test/baseline/`.
 3. **Change the skill package.** Prefer a NEVER/ALWAYS tighten or a rationalization row in `SKILL.md`. Put dialect detail in `reference.md`. Phrase constraints as absolute rules — hedged guidance gets rationalized away under pressure. **Commit** the skill change separately from the scenario commit.
 4. **Add the rationalization** to the table in `SKILL.md`, quoting the reasoning the model actually used. Naming the specific excuse is what makes the rule stick.
-5. **Run the full suite.** A rule that fixes one scenario can loosen another. Confirm the grep guard and `SKILL.md` line budget still pass.
-6. **Check the run record.** Every run appends model, effort, token counts and cost to `test/results/runs.jsonl`. Compare against the previous run: a rule that passes but doubles token usage is worth knowing about, and a suite that only passes on the largest model with maximum thinking is a fragile result rather than a green one.
+5. **Run `task test`** (guards + tier-1 compare) as a minimum gate; run `task test:compare` (full paired A/B) before treating the change as done for merge/release. A rule that fixes one scenario can loosen another. Confirm the grep guard and `SKILL.md` line budget still pass.
+6. **Check the benchmark.** Every paired run writes `timing.json` / `grading.json` per arm, rolled up into `test/workspace/iteration-<N>/benchmark.json`. Compare against the previous iteration with `task test:diff A=... B=...`: a rule that passes but doubles token usage is worth knowing about, and a suite that only passes on the largest model with maximum thinking is a fragile result rather than a green one.
+7. **Keep evals in sync.** Run `task test:evals:sync` so `skills/hc-scaffold-service/evals/evals.json` reflects the new/changed scenario; `task test:evals:check` fails CI on drift.
 
 ## When a rule keeps getting rationalized
 

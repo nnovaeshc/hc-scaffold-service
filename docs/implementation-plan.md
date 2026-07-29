@@ -11,6 +11,10 @@ Build a Claude Code skill that lets an engineer create a component from a Backst
 
 See [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) and [TEST_RESULTS.md](../TEST_RESULTS.md) for details.
 
+### Testing alignment (added after T1-T10)
+
+The harness built in T6/T7/T10 below is being aligned with Anthropic skill-creator / agentskills.io evaluation practice: a root `Taskfile.yml` becomes the only documented operator entry point (`task test`, `task test:compare`, …), `test/run.sh` remains an implementation detail behind it, and paired compare runs additionally emit skill-creator-compatible `skills/hc-scaffold-service/evals/evals.json` / `triggers.json` plus an agentskills workspace tree (`test/workspace/iteration-<N>/.../{timing.json,grading.json}` + `benchmark.json`) alongside the existing stub-harness assertions. Completed T1–T10 history below is not being redone or rewritten for this; new harness work follows [align-tests-skill-creator.md](align-tests-skill-creator.md), and `test/results/runs.jsonl` is superseded by per-arm `timing.json` / `grading.json` rolled into `benchmark.json`.
+
 ---
 
 This document is self-contained and imperative: every decision is already made and stated as a requirement. Do not reopen design questions; implement what is written. Where a fact is marked **verify**, run the stated check and adapt; everything else is settled.

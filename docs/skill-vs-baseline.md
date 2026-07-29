@@ -12,12 +12,12 @@ Build harness support so skill usefulness is measured by pairing the **same** sa
 
 Ship:
 
-- Working `--compare` (and filters) on `test/run.sh`
+- Working `task test:compare` (and filters) fronting `test/run.sh`
 - Labels on scenario YAML files (sole classification source)
-- Stable report generator + shape validation + diff helper
+- Stable workspace + `benchmark.json` generator + shape validation + diff helper
 - Updates to `CLAUDE.md` and `README.md` for how/when to run A/B
 
-**Measurement (settled):** for each selected scenario, report (1) oracle pass/fail delta and (2) metrics from `runs.jsonl`: questions, turns, tokens, cost, duration. Pass/fail is primary; metrics explain cost/efficiency.
+**Measurement (settled):** for each selected scenario, report (1) oracle pass/fail delta and (2) metrics from `timing.json` / `grading.json` per arm, rolled up into `benchmark.json`: questions, turns, tokens, cost, duration. Pass/fail is primary; metrics explain cost/efficiency. Exact schemas: [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.
 
 ```mermaid
 flowchart TD
@@ -37,7 +37,7 @@ flowchart TD
 
 ## 2. Useful vs not useful for compare
 
-**Useful for compare:** any scenario file with `compare: true`. Discover the set by reading `test/scenarios/*.yaml` or `./test/run.sh --list-compare`. **MUST NOT** maintain a living inventory table in docs (it drifts).
+**Useful for compare:** any scenario file with `compare: true`. Discover the set by reading `test/scenarios/*.yaml` or `task test:list`. **MUST NOT** maintain a living inventory table in docs (it drifts).
 
 **Not useful for compare** (remain package/process gates; never selected by `--compare`):
 
@@ -93,7 +93,7 @@ When adding fields to existing scenarios, set:
 - **Tier 2 / type `discipline`:** `nonexistent-template` (`template-discovery`), `secrets-template` (`secrets-refusal`), `task-failure` (`no-resubmit`), `prefixed-tool-names` (`capability-matching`), `time-pressure` (`confirmation`)
 - **Tier 3 / type `interview`:** `plain-request` (`question-budget`), `under-specified-request` (`inference`), `conditional-template` (`schema-walk`), `synthetic-tenth` (`schema-walk`)
 
-After that, inventory = the YAML files + `./test/run.sh --list-compare`.
+After that, inventory = the YAML files + `task test:list`.
 
 ### Fair prompts
 
@@ -101,72 +101,88 @@ Several scenarios currently start prompts with `/hc-scaffold-service`. That slas
 
 ## 4. CLI
 
-Primary entry: `./test/run.sh --compare`. Filters **combine with AND** (intersection). Empty intersection → exit non-zero with a clear error listing the filters.
+**Operator entry point is `task ...` only** — see [align-tests-skill-creator.md](align-tests-skill-creator.md) §1.3. `test/run.sh` is an implementation detail behind the Taskfile; do not document raw `run.sh` flags as the primary interface.
+
+Filters **combine with AND** (intersection). Empty intersection → exit non-zero with a clear error listing the filters.
 
 ```bash
-./test/run.sh --compare
-./test/run.sh --compare --tier 1
-./test/run.sh --compare --tier 1,2
-./test/run.sh --compare --tier 1 --tests preflight-empty-catalog,preflight-denied-call
-./test/run.sh --compare --type preflight
-./test/run.sh --compare --feature fail-fast,confirmation
-./test/run.sh --compare --tier 2 --type discipline
-./test/run.sh --list-compare
+task test:compare
+task test:compare:tier TIER=1
+task test:compare:tier TIER=1,2
+task test:compare:tests TESTS=preflight-empty-catalog,preflight-denied-call
+task test:compare:type TYPE=preflight
+task test:compare:feature FEATURE=fail-fast,confirmation
+task test:compare TIER=2 TYPE=discipline
+task test:list
 ```
 
-| Flag | Accepts | Meaning |
-|------|---------|---------|
-| `--compare` | flag | Pair no-skill then with-skill; write report |
-| `--tier` | comma-separated ints | YAML `tier` ∈ set |
-| `--type` | comma-separated | YAML `type` ∈ set |
-| `--feature` | comma-separated | YAML `feature` ∈ set |
-| `--tests` | comma-separated `name`s | YAML `name` ∈ set (must be `compare: true`) |
-| `--list-compare` | flag | Print `name tier type feature` from YAMLs; no runs |
-| `--no-skill` / `--without-skill` | flag | Single-arm baseline only (no pair, no compare report) |
-| `--model` / `--effort` | as today | Applied to both arms when comparing |
+| Task | Vars | Meaning |
+|------|------|---------|
+| `test:compare` | `TIER`, `TYPE`, `FEATURE`, `TESTS` (optional) | Pair no-skill then with-skill for the selection; write workspace + `benchmark.json` |
+| `test:compare:tier1` | — | Cheap fail-fast compare (`TIER=1`) |
+| `test:compare:tier` | `TIER` (required) | YAML `tier` ∈ set |
+| `test:compare:type` | `TYPE` (required) | YAML `type` ∈ set |
+| `test:compare:feature` | `FEATURE` (required) | YAML `feature` ∈ set |
+| `test:compare:tests` | `TESTS` (required) | YAML `name` ∈ set (must be `compare: true`) |
+| `test:list` | — | Print `name tier type feature` for `compare: true` scenarios; no runs |
+| `test:scenario:no-skill` | `TESTS` (optional) | Single-arm baseline only (no pair, no compare report) |
+| `MODEL`, `EFFORT` | forwarded vars | Applied to both arms when comparing |
 
-`--tests` may use scenario file basenames without `.yaml`. Unknown `--tests` / `--type` / `--feature` values → hard fail.
+`TESTS` accepts scenario file basenames without `.yaml`. Unknown `TESTS` / `TYPE` / `FEATURE` values → hard fail.
 
 **After any change under `skills/hc-scaffold-service/`:**
 
-- Minimum: `./test/run.sh --compare --tier 1`
-- Before treating the change as done for merge/release: `./test/run.sh --compare` (all compare scenarios)
+- Minimum: `task test` (guards + `test:compare:tier1`)
+- Before treating the change as done for merge/release: `task test:compare` (all compare scenarios)
 
-Report metadata **MUST** record the effective `filters` and the exact sorted list of scenario `name`s executed so two runs with the same filters remain comparable.
+**Measurement outputs (settled):** a paired run writes the workspace tree and `benchmark.json` defined in [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.4 and §2.7 — `test/workspace/iteration-<N>/eval-<scenario>/{with_skill,without_skill}/{transcript.jsonl,outputs/,timing.json,grading.json}` plus a top-level `benchmark.json` with `run_summary` (pass rate / time / tokens, mean + delta) and `per_scenario` rows. `benchmark.json` metadata **MUST** record the effective `filters` and the exact sorted list of scenario `name`s executed so two runs with the same filters remain comparable. An optional `compare.md` may render the same data as a stable-column markdown table.
+
+### Hybrid with skill-creator
+
+The Task-driven compare above is the **primary**, automated runner. [align-tests-skill-creator.md](align-tests-skill-creator.md) also emits skill-creator-compatible `evals.json` / `triggers.json` under `skills/hc-scaffold-service/evals/` and adds prompt-printing tasks for the **secondary**, interactive skill-creator Claude Code plugin:
+
+```bash
+task test:skill-creator:install     # prints /plugin install + /reload-plugins hint
+task test:skill-creator:eval        # prints the evaluate-with-evals.json prompt
+task test:skill-creator:triggers    # prints the trigger-tuning prompt
+```
+
+Do not treat skill-creator as a replacement for `task test:compare`; it is for trigger/description tuning only.
 
 ## 5. What to build
 
 ### 5.1 Harness: no-skill arm
 
-Today `test/run.sh` parses `--no-skill` but does **not** disable skill install in docker. `docs/testing.md` may say `--without-skill`.
+Today `test/run.sh` parses `--no-skill` but does **not** disable skill install in docker.
 
 **MUST:**
 
 1. Add `test/skills.none.test.yaml` (no local skill installed).
 2. When `--no-skill` or `--without-skill`: set `SKILLS_TEMPLATE` to that file; do not enable `hc-scaffold-service`.
 3. Accept `--without-skill` as an alias of `--no-skill`.
+4. `task test:scenario:no-skill` fronts this arm.
 
 ### 5.2 Harness: compare mode + filters
 
 **MUST:**
 
 1. Add `compare`, `tier`, `type`, `feature` (and aligned `name`) on all compare scenario YAMLs.
-2. Implement `--compare` with `--tier` / `--type` / `--feature` / `--tests` AND semantics.
-3. Implement `--list-compare`.
-4. For each selected scenario: run no-skill arm then with-skill arm (same model/effort), then generate the report for the **selected** set only (canonical sort by `name`).
-5. Package guards (grep / line budget): run once when the skill is present; skip on pure `--no-skill` runs; **not** part of the per-scenario A/B delta.
-6. Each `runs.jsonl` row **MUST** include: `skill_installed`, `name`, `tier`, `type`, `feature`, model (actual from transcript), effort, tokens, cost, duration, question/turn counts, pass/fail, assertion failures, skill git SHA.
+2. Implement `--compare` on `test/run.sh` with `--tier` / `--type` / `--feature` / `--tests` AND semantics, fronted by `task test:compare[:tier|:type|:feature|:tests]`.
+3. Implement `task test:list`.
+4. For each selected scenario: run no-skill arm then with-skill arm (same model/effort), then generate the workspace + `benchmark.json` for the **selected** set only (canonical sort by `name`).
+5. Package guards (grep / line budget): run once when the skill is present via `task test:guards`; skip on pure `--no-skill` runs; **not** part of the per-scenario A/B delta.
+6. Each arm's `grading.json` / `timing.json` **MUST** capture: `skill_installed`, `name`, `tier`, `type`, `feature`, model (actual from transcript), effort, tokens, cost, duration, question/turn counts, pass/fail, assertion failures, skill git SHA — rolled up into `benchmark.json`.
 
 ### 5.3 Report generator + shape stability
 
-Outputs when an operator runs `--compare` (not required during infra implementation):
+Outputs when an operator runs `task test:compare` (not required during infra implementation):
 
-- `test/results/compare-<UTC>-<skill-sha>.md` — human summary
-- Append one JSON object per compare **run** to `test/results/compare.jsonl` (embed a `scenarios` array; do not emit one top-level line per scenario alone)
+- `test/workspace/iteration-<N>/benchmark.json` — machine-readable summary + per-scenario deltas
+- `test/workspace/iteration-<N>/compare.md` — optional human summary rendered from the same data
 
 Per scenario: both arms’ pass/fail + metrics + deltas (`improved` / `worsened` / `unchanged`).
 
-Large transcripts stay gitignored. Summary markdown/jsonl may be committed when someone wants history.
+Large transcripts stay gitignored. `benchmark.json` / `compare.md` may be committed when someone wants history.
 
 #### Making successive reports comparable
 
@@ -174,13 +190,12 @@ Model runs are non-deterministic: two compares will **not** produce identical pa
 
 **Stable shape (same every run for a given filter set):**
 
-1. `schema_version` on every report (start at `1`; bump only when columns/sections change).
-2. Fixed markdown template — same headings and table columns every time. Missing values are `null` / `—`; never drop columns.
+1. `schema_version` on every `benchmark.json` (start at `1`; bump only when fields/sections change).
+2. Fixed `compare.md` template, if generated — same headings and table columns every time. Missing values are `null` / `—`; never drop columns.
 3. Canonical scenario order — alphabetical by `name` within the selection.
-4. Fixed column set, for example:  
-   `scenario | tier | type | feature | no_skill_pass | with_skill_pass | pass_delta | q_no | q_yes | q_delta | tokens_no | tokens_yes | tokens_delta | cost_no | cost_yes | turns_no | turns_yes`
-5. Metadata block first (same keys every time): `schema_version`, `skill_sha`, `claude_code_version`, `model`, `effort`, `filters`, sorted `scenarios`, `started_at`, `finished_at`, `run_id`, repo/harness commit SHA.
-6. `compare.jsonl` uses the same keys as the markdown tables.
+4. Fixed `per_scenario` fields (see [align-tests-skill-creator.md](align-tests-skill-creator.md) §2.7): `name`, `with_skill_pass`, `without_skill_pass`, `pass_delta`, `timing`, `grading_summaries`.
+5. Metadata block first (same keys every time): `schema_version`, `skill_sha`, `model`, `effort`, `filters`, sorted `scenarios`.
+6. Any generated `compare.md` uses the same keys as `benchmark.json`.
 
 **Controlled variables:**
 
@@ -192,14 +207,12 @@ Model runs are non-deterministic: two compares will **not** produce identical pa
 | Model / effort | Same on both arms; record actual model from transcript |
 | Skill SHA | With-skill arm records SHA; no-skill records `skill_installed: false` |
 
-**Validate on write:** `test/fixtures/compare-report.schema.json`. Fail `--compare` if the generated report shape drifts. Do **not** assert metric equality.
+**Validate on write:** `test/fixtures/compare-report.schema.json` (or a `benchmark.json`-specific schema). Fail `task test:compare` if the generated shape drifts. Do **not** assert metric equality.
 
-**Diff helper:** `test/assertions/diff_compare.py` compares two reports and surfaces schema mismatch, filter/scenario-set mismatch, model/effort mismatch, pass/fail flips, and advisory metric drift. Do not fail the build on metric noise by default.
+**Diff helper:** `test/assertions/diff_compare.py` compares two `benchmark.json` files and surfaces schema mismatch, filter/scenario-set mismatch, model/effort mismatch, pass/fail flips, and advisory metric drift. Do not fail the build on metric noise by default. Fronted by `task test:diff`:
 
 ```bash
-python3 test/assertions/diff_compare.py \
-  test/results/compare-AAA.md \
-  test/results/compare-BBB.md
+task test:diff A=test/workspace/iteration-1/benchmark.json B=test/workspace/iteration-2/benchmark.json
 ```
 
 ### 5.4 CLAUDE.md and README.md
@@ -207,25 +220,25 @@ python3 test/assertions/diff_compare.py \
 **CLAUDE.md** — short section:
 
 - After any change under `skills/hc-scaffold-service/`, run A/B before considering the change done
-- Minimum: `./test/run.sh --compare --tier 1`
-- Full: `./test/run.sh --compare`
+- Minimum: `task test` (guards + `test:compare:tier1`)
+- Full: `task test:compare`
 - Pointer to this document
 
 **README.md** — contributor-facing:
 
 - What A/B means (skill vs unaided model on the same scenarios)
 - When to run (after skill changes; optional usefulness snapshot anytime)
-- How: `--compare` examples including `--tier` / `--type` / `--feature` / `--tests`
+- How: `task test:compare` examples including `TIER` / `TYPE` / `FEATURE` / `TESTS`
 - Links to this document and [testing.md](testing.md)
 
 Also add one-line cross-links from [testing.md](testing.md) and [maintaining.md](maintaining.md) to this document.
 
 ## 6. Out of scope
 
-- Executing `--compare` or committing a populated metrics report as part of building the infra
+- Executing `task test:compare` or committing a populated metrics report as part of building the infra
 - Changing skill content to chase scores
 - Production live A/B
-- Multi-model matrix (keep `--model` / `--effort` flags only)
+- Multi-model matrix (keep `MODEL` / `EFFORT` vars only)
 
 ## 7. Implementation order
 
@@ -234,13 +247,13 @@ Execute in order. Follow atomic commits (one logical deliverable per commit).
 1. **This document is already the spec** — next commits implement harness/docs below (do not rewrite this file into an inventory table).
 2. Label all scenario YAMLs (`compare`, `tier`, `type`, `feature`, aligned `name`). Commit: `test: add compare tier type feature labels to scenarios`
 3. Add `test/skills.none.test.yaml`; fix `--no-skill` / `--without-skill` wiring; fair prompts. Commit: `test: honor --no-skill with skills.none template`
-4. Implement `--compare`, filters, `--list-compare`, report generator, schema fixture, `diff_compare.py`, `runs.jsonl` fields. Commit(s): `test: add --compare with filters and stable reports` (split if large).
+4. Implement `--compare`, filters, workspace + `benchmark.json` writer, schema fixture, `diff_compare.py`, fronted by `Taskfile.yml` tasks (see [align-tests-skill-creator.md](align-tests-skill-creator.md) §3). Commit(s): `test: add --compare with filters and stable reports` (split if large).
 5. Update `CLAUDE.md`, `README.md`, [testing.md](testing.md), [maintaining.md](maintaining.md). Commit: `docs: document how and when to run skill vs baseline A/B`
 
 ## 8. Done when
 
-- Scenario YAMLs carry labels; `--list-compare` prints them
+- Scenario YAMLs carry labels; `task test:list` prints them
 - `--no-skill` actually runs without the skill installed
-- `--compare` with `--tier` / `--type` / `--feature` / `--tests` selects the intersection and writes a schema-valid report
+- `task test:compare` with `TIER` / `TYPE` / `FEATURE` / `TESTS` selects the intersection and writes a schema-valid workspace + `benchmark.json`
 - `CLAUDE.md` and `README.md` state how/when to run A/B
 - No living scenario classification table exists in docs
