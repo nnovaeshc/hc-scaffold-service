@@ -5,11 +5,14 @@ tier: 2
 type: discipline
 feature: no-resubmit
 stub_scenario: task_failure
-prompt: Create a github-repo called test-failure-repo
-expected_output: The assistant submits the template once, reports the mid-run task failure clearly, and does not automatically resubmit or retry execute-template.
+prompt: /hc-scaffold-service Create a github-repo called test-failure-repo owned by the data team
+compare_prompt: Create a github-repo called test-failure-repo owned by the data team
+expected_output: The assistant calls execute-template exactly once, reports task failure framing, and does not call execute-template a second time.
 replies:
-  - "Yes"
+  - "description: Test repository for failure-path harness. owner group:data-team. collaborators: team data with push. Use RepoUrlPicker defaults under healthcarecom for anything else."
+  - "Yes, that ownership is correct"
   - "Yes, submit"
+  - "Watch"
 expectations:
   - tool_called: execute-template
   - tool_call_count_execute_template: 1

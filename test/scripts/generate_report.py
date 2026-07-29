@@ -80,12 +80,44 @@ def esc(s):
     return html.escape(str(s))
 
 
+def _mean(rs_arm, metric):
+    """Return run_summary[arm][metric]['mean'], or None if arm/metric absent."""
+    if not rs_arm:
+        return None
+    m = rs_arm.get(metric) or {}
+    return m.get("mean")
+
+
+def fmt_pct(v):
+    return "n/a" if v is None else f"{v:.0%}"
+
+
+def fmt_num(v, digits=1, comma=False):
+    if v is None:
+        return "n/a"
+    if comma:
+        return f"{v:,.{digits}f}" if digits else f"{v:,.0f}"
+    return f"{v:.{digits}f}"
+
+
+def fmt_delta_pct(v):
+    return "n/a" if v is None else f"{v:+.0%}"
+
+
+def fmt_delta_num(v, digits=1, comma=False):
+    if v is None:
+        return "n/a"
+    if comma:
+        return f"{v:+,.{digits}f}" if digits else f"{v:+,.0f}"
+    return f"{v:+.{digits}f}"
+
+
 def build_metric_series(iterations, metric):
     with_vals, without_vals = [], []
     for it in iterations:
         rs = it["benchmark"]["run_summary"]
-        with_vals.append(rs["with_skill"][metric]["mean"])
-        without_vals.append(rs["without_skill"][metric]["mean"])
+        with_vals.append(_mean(rs.get("with_skill"), metric))
+        without_vals.append(_mean(rs.get("without_skill"), metric))
     return with_vals, without_vals
 
 
@@ -93,7 +125,9 @@ def render_svg_line_chart(iterations, metric, title):
     if len(iterations) < 2:
         return ""
     with_vals, without_vals = build_metric_series(iterations, metric)
-    all_vals = with_vals + without_vals
+    all_vals = [v for v in with_vals + without_vals if v is not None]
+    if not all_vals:
+        return ""
     lo, hi = min(all_vals), max(all_vals)
     if hi == lo:
         hi = lo + 1
@@ -106,14 +140,23 @@ def render_svg_line_chart(iterations, metric, title):
         return x, y
 
     def polyline(vals, color):
-        pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in (point(i, v) for i, v in enumerate(vals)))
+        pts = " ".join(
+            f"{x:.1f},{y:.1f}"
+            for i, v in enumerate(vals)
+            if v is not None
+            for x, y in [point(i, v)]
+        )
         return f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="2"/>'
 
     dots = []
     for i, v in enumerate(with_vals):
+        if v is None:
+            continue
         x, y = point(i, v)
         dots.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="#2563eb"/>')
     for i, v in enumerate(without_vals):
+        if v is None:
+            continue
         x, y = point(i, v)
         dots.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="#9ca3af"/>')
 
@@ -180,17 +223,24 @@ def main():
             verdict_reasons.append(f"regression(s): {', '.join(regressions)}")
         if verdict != "FAIL":
             rs = current["benchmark"]["run_summary"]
-            if rs["with_skill"]["pass_rate"]["mean"] < 1.0:
+            ws_rate = _mean(rs.get("with_skill"), "pass_rate")
+            if ws_rate is not None and ws_rate < 1.0:
                 verdict = "PASS WITH ISSUES"
                 verdict_reasons.append("with-skill pass rate < 100%")
             if covered < len(compare_scenarios):
                 verdict = "PASS WITH ISSUES" if verdict == "PASS" else verdict
                 verdict_reasons.append(f"partial scenario coverage ({coverage_note})")
-            if non_discriminating:
-                verdict = "PASS WITH ISSUES" if verdict == "PASS" else verdict
-                verdict_reasons.append(f"non-discriminating check(s): {', '.join(non_discriminating)}")
+            # non_discriminating is informational only — both arms green does not
+            # downgrade the verdict; surfaced as Caveats below.
 
     verdict_class = {"PASS": "pass", "PASS WITH ISSUES": "warn", "FAIL": "fail"}[verdict]
+
+    caveats = []
+    if non_discriminating:
+        caveats.append(
+            f"{len(non_discriminating)} non-discriminating (baseline also passes — "
+            f"skill not proven): {', '.join(non_discriminating)}"
+        )
 
     # ---- Executive summary ----
     exec_rows = [
@@ -198,22 +248,26 @@ def main():
         f"<tr><td>Iteration(s) on disk</td><td>{esc(', '.join(str(i['num']) for i in iterations) or '(none)')}</td></tr>",
         f"<tr><td>Verdict</td><td><span class='badge {verdict_class}'>{esc(verdict)}</span> "
         f"{esc('; '.join(verdict_reasons)) if verdict_reasons else ''}</td></tr>",
+        f"<tr><td>Caveats</td><td>{esc('; '.join(caveats)) if caveats else 'none'}</td></tr>",
         f"<tr><td>Guards (genericity + line budget)</td><td>{'PASS' if guards_ok else 'FAIL'}</td></tr>",
         f"<tr><td>evals.json/scenario-map.json drift</td><td>{'in sync' if evals_ok else 'OUT OF SYNC'}</td></tr>",
         f"<tr><td>Scenario coverage (current iteration)</td><td>{esc(coverage_note)}</td></tr>",
     ]
     if current:
         rs = current["benchmark"]["run_summary"]
+        delta = rs.get("delta") or {}
         exec_rows.append(
             f"<tr><td>Pass rate: with-skill vs. baseline</td><td>"
-            f"{rs['with_skill']['pass_rate']['mean']:.0%} vs. {rs['without_skill']['pass_rate']['mean']:.0%} "
-            f"(delta {rs['delta']['pass_rate']:+.0%})</td></tr>"
+            f"{fmt_pct(_mean(rs.get('with_skill'), 'pass_rate'))} vs. "
+            f"{fmt_pct(_mean(rs.get('without_skill'), 'pass_rate'))} "
+            f"(delta {fmt_delta_pct(delta.get('pass_rate'))})</td></tr>"
         )
         if previous:
             prev_rs = previous["benchmark"]["run_summary"]
             exec_rows.append(
                 f"<tr><td>Pass rate vs. previous iteration (i{previous['num']} → i{current['num']})</td><td>"
-                f"{prev_rs['with_skill']['pass_rate']['mean']:.0%} → {rs['with_skill']['pass_rate']['mean']:.0%}</td></tr>"
+                f"{fmt_pct(_mean(prev_rs.get('with_skill'), 'pass_rate'))} → "
+                f"{fmt_pct(_mean(rs.get('with_skill'), 'pass_rate'))}</td></tr>"
             )
         exec_rows.append(
             f"<tr><td>Regressions vs. previous iteration</td><td>"
@@ -221,8 +275,10 @@ def main():
         )
         exec_rows.append(
             f"<tr><td>Cost: with-skill vs. baseline</td><td>"
-            f"time {rs['with_skill']['time_seconds']['mean']:.1f}s vs. {rs['without_skill']['time_seconds']['mean']:.1f}s, "
-            f"tokens {rs['with_skill']['tokens']['mean']:,.0f} vs. {rs['without_skill']['tokens']['mean']:,.0f}</td></tr>"
+            f"time {fmt_num(_mean(rs.get('with_skill'), 'time_seconds'))}s vs. "
+            f"{fmt_num(_mean(rs.get('without_skill'), 'time_seconds'))}s, "
+            f"tokens {fmt_num(_mean(rs.get('with_skill'), 'tokens'), digits=0, comma=True)} vs. "
+            f"{fmt_num(_mean(rs.get('without_skill'), 'tokens'), digits=0, comma=True)}</td></tr>"
         )
     trig_note = (
         f"NOT automatically measured — {len(triggers['should_trigger'])} should-trigger / "
@@ -266,8 +322,10 @@ def main():
 
             if row["name"] in non_discriminating:
                 block.append(
-                    "<p class='flag'>⚠ Non-discriminating: the baseline (no-skill) arm already passes all "
-                    "assertions for this scenario — this check would not catch a broken skill.</p>"
+                    "<p class='flag'>⚠ Non-discriminating: both arms passed the same mechanical checks. "
+                    "If you broke or removed the skill, this scenario could still go green — "
+                    "the unaided model already satisfies the assertions, so this case alone "
+                    "cannot prove the skill caused the pass.</p>"
                 )
             block.append("</div>")
             per_test_html.append("".join(block))
@@ -281,18 +339,19 @@ def main():
     agg_html = "<p>No compare data available.</p>"
     if current:
         rs = current["benchmark"]["run_summary"]
+        delta = rs.get("delta") or {}
         agg_html = f"""
         <table class='metrics'>
           <tr><th>Metric</th><th>With skill</th><th>Baseline</th><th>Delta</th></tr>
-          <tr><td>Pass rate</td><td>{rs['with_skill']['pass_rate']['mean']:.0%}</td>
-              <td>{rs['without_skill']['pass_rate']['mean']:.0%}</td>
-              <td>{rs['delta']['pass_rate']:+.0%}</td></tr>
-          <tr><td>Time (s, mean)</td><td>{rs['with_skill']['time_seconds']['mean']:.2f}</td>
-              <td>{rs['without_skill']['time_seconds']['mean']:.2f}</td>
-              <td>{rs['delta']['time_seconds']:+.2f}</td></tr>
-          <tr><td>Tokens (mean)</td><td>{rs['with_skill']['tokens']['mean']:,.0f}</td>
-              <td>{rs['without_skill']['tokens']['mean']:,.0f}</td>
-              <td>{rs['delta']['tokens']:+,.0f}</td></tr>
+          <tr><td>Pass rate</td><td>{fmt_pct(_mean(rs.get('with_skill'), 'pass_rate'))}</td>
+              <td>{fmt_pct(_mean(rs.get('without_skill'), 'pass_rate'))}</td>
+              <td>{fmt_delta_pct(delta.get('pass_rate'))}</td></tr>
+          <tr><td>Time (s, mean)</td><td>{fmt_num(_mean(rs.get('with_skill'), 'time_seconds'), digits=2)}</td>
+              <td>{fmt_num(_mean(rs.get('without_skill'), 'time_seconds'), digits=2)}</td>
+              <td>{fmt_delta_num(delta.get('time_seconds'), digits=2)}</td></tr>
+          <tr><td>Tokens (mean)</td><td>{fmt_num(_mean(rs.get('with_skill'), 'tokens'), digits=0, comma=True)}</td>
+              <td>{fmt_num(_mean(rs.get('without_skill'), 'tokens'), digits=0, comma=True)}</td>
+              <td>{fmt_delta_num(delta.get('tokens'), digits=0, comma=True)}</td></tr>
         </table>
         <p class='note'>Single run per scenario per arm — no stddev available (write_workspace.py runs each once).</p>
         """
@@ -305,10 +364,10 @@ def main():
             rs = it["benchmark"]["run_summary"]
             rows.append(
                 f"<tr><td>i{it['num']}</td>"
-                f"<td>{rs['with_skill']['pass_rate']['mean']:.0%}</td>"
-                f"<td>{rs['without_skill']['pass_rate']['mean']:.0%}</td>"
-                f"<td>{rs['with_skill']['time_seconds']['mean']:.1f}s</td>"
-                f"<td>{rs['with_skill']['tokens']['mean']:,.0f}</td></tr>"
+                f"<td>{fmt_pct(_mean(rs.get('with_skill'), 'pass_rate'))}</td>"
+                f"<td>{fmt_pct(_mean(rs.get('without_skill'), 'pass_rate'))}</td>"
+                f"<td>{fmt_num(_mean(rs.get('with_skill'), 'time_seconds'))}s</td>"
+                f"<td>{fmt_num(_mean(rs.get('with_skill'), 'tokens'), digits=0, comma=True)}</td></tr>"
             )
         # consistently-failing assertions across iterations, per scenario+assertion text
         fail_counts = {}
@@ -341,7 +400,10 @@ def main():
     # ---- Known gaps ----
     gaps = []
     if non_discriminating:
-        gaps.append(f"Non-discriminating checks (baseline already passes): {', '.join(non_discriminating)}.")
+        gaps.append(
+            "Non-discriminating checks (both arms pass the same assertions — a broken/removed "
+            f"skill could still look green): {', '.join(non_discriminating)}."
+        )
     if current and len(current["benchmark"]["per_scenario"]) < len(compare_scenarios):
         missing = sorted(set(s["name"] for s in compare_scenarios) - set(r["name"] for r in current["benchmark"]["per_scenario"]))
         gaps.append(f"Scenario coverage is partial ({coverage_note}). Not yet run: {', '.join(missing)}.")

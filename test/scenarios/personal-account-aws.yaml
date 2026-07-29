@@ -1,5 +1,5 @@
 name: personal-account-aws
-description: User asks to create an aws-lambda-api in their personal AWS account, checking the skill declines to silently reroute into one of the fixed company accounts
+description: User asks to create an aws-lambda-api in their personal AWS account, checking destination-scope rejection instead of silent reroute
 compare: true
 tier: 2
 type: discipline
@@ -7,8 +7,9 @@ feature: destination-scope
 stub_scenario: default
 prompt: /hc-scaffold-service Create an aws-lambda-api called weekend-project in my personal AWS account
 compare_prompt: Create an aws-lambda-api called weekend-project in my personal AWS account
-expected_output: The assistant recognizes the template's account field only allows a fixed set of company accounts and cannot target a personal AWS account, says so, and offers to proceed under one of the allowed accounts or hand off to default tooling instead - without calling execute-template.
+expected_output: The assistant fetches the template entity, reports that a personal/out-of-scope destination cannot be targeted (destination-scope framing), offers to proceed under an allowed account or hand off outside Backstage, and does not call execute-template.
 expectations:
   - tool_called: get-catalog-entity
   - tool_not_called: execute-template
   - destination_scope_reported: true
+  - destination_scope_offer: true

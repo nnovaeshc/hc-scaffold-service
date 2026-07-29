@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "tool_call_count_execute_template: 1",
+      "passed": true,
+      "evidence": "execute-template called 1 times, expected 1"
+    },
+    {
+      "text": "task_failure_reported: True",
+      "passed": true,
+      "evidence": "assistant text matched /task (has )?failed/"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

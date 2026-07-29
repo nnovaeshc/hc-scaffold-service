@@ -1,0 +1,35 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: query-catalog-entities",
+      "passed": true,
+      "evidence": "tool_use name~=query-catalog-entities found=True"
+    },
+    {
+      "text": "filter_kind: Group",
+      "passed": true,
+      "evidence": "found catalog query with filter.kind=Group"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "2 catalog queries all carry fields+limit"
+    },
+    {
+      "text": "submitted_value_matches: values.owner=^data$",
+      "passed": true,
+      "evidence": "values.owner='data' vs /^data$/ matched=True"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

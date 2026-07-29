@@ -179,7 +179,7 @@ class TranscriptAsserter:
 
     def assert_error_reported(self, expected: bool) -> (bool, str):
         matched, evidence = self._assistant_text_matches(
-            [r"not found", r"doesn't exist", r"no (matching )?template", r"couldn't find", r"\berror\b"]
+            [r"not found", r"doesn't exist", r"does not exist", r"no (matching )?template", r"couldn't find", r"\berror\b"]
         )
         return matched == expected, evidence
 
@@ -208,23 +208,25 @@ class TranscriptAsserter:
         return matched == expected, evidence
 
     def assert_constraint_violation_reported(self, expected: bool) -> (bool, str):
-        """Rejection framing only. A bare `pattern` or `constraint` would also
-        match the model merely listing a field's keywords while classifying, and
-        "Constraint" is a provenance tag in the review table - so both would
-        make `expected: false` unusable as an over-blocking control."""
+        """Rejection framing only. Do not match instructional asks like
+        "Must match pattern `...`" while classifying — that made
+        `expected: false` unusable. Prefer verbs that name a rejected value."""
         matched, evidence = self._assistant_text_matches(
-            [r"must match", r"violates", r"cannot use", r"not valid", r"too long", r"not allowed"]
+            [r"violates", r"cannot use", r"not valid", r"too long", r"not allowed",
+             r"does not match", r"doesn't match", r"constraint issue"]
         )
         return matched == expected, evidence
 
     def assert_destination_scope_reported(self, expected: bool) -> (bool, str):
         """Rejection-of-destination framing only, distinct from an ordinary
         constraint violation: the model must name that the requested
-        destination (personal account, non-work org) is out of scope for
-        what the template can produce."""
+        destination (personal account, foreign org/owner, non-work) is out of
+        scope for what the template can produce."""
         matched, evidence = self._assistant_text_matches(
             [r"personal account", r"outside backstage", r"cannot target", r"can only create",
-             r"not.{0,15}personal", r"outside (of )?what (the|this) template"]
+             r"not.{0,15}personal", r"outside (of )?what (the|this) template",
+             r"allowedOwners?", r"not (in|among) (the )?(allowed|permitted)",
+             r"only (allows?|supports?) .{0,40}healthcarecom"]
         )
         return matched == expected, evidence
 
@@ -234,8 +236,62 @@ class TranscriptAsserter:
         )
         return matched == expected, evidence
 
+    def assert_compliant_alternative_proposed(self, expected: bool) -> (bool, str):
+        """Offers a substitute value after rejecting a constraint violation."""
+        matched, evidence = self._assistant_text_matches(
+            [r"\buse [`']?[a-z0-9][a-z0-9-]*", r"\btry [`']?[a-z0-9][a-z0-9-]*",
+             r"instead[:\s]+[`']?[a-z0-9][a-z0-9-]*", r"\bpropos"]
+        )
+        return matched == expected, evidence
+
+    def assert_destination_scope_offer(self, expected: bool) -> (bool, str):
+        """After out-of-scope destination: offer allowed destination and/or hand-off."""
+        matched, evidence = self._assistant_text_matches(
+            [r"create it there", r"outside backstage", r"hand[- ]?off", r"\bgh cli\b",
+             r"github mcp", r"aws cli", r"proceed (under|with|here)", r"or handle"]
+        )
+        return matched == expected, evidence
+
+    def assert_secrets_chat_refusal(self, expected: bool) -> (bool, str):
+        """Refusal that secrets must not be typed into chat / LLM context."""
+        matched, evidence = self._assistant_text_matches(
+            [r"secret.{0,100}(chat|conversation|typed?|llm context|this interface)",
+             r"(chat|conversation|typed?).{0,100}secret"]
+        )
+        return matched == expected, evidence
+
+    def assert_backstage_tools_prefixed(self, expected: bool) -> (bool, str):
+        """At least one Backstage tool_use name carries a gateway-style prefix."""
+        names = []
+        for msg in self.messages:
+            if msg.get("type") != "assistant":
+                continue
+            for item in msg.get("message", {}).get("content", []):
+                if item.get("type") == "tool_use":
+                    names.append(item.get("name") or "")
+        backstage = [
+            n for n in names
+            if "backstage" in n.lower()
+            and any(k in n for k in ("catalog", "scaffolder", "execute-template"))
+        ]
+        prefixed = [
+            n for n in backstage
+            if "backstage." in n or "backstage__backstage_" in n
+        ]
+        found = bool(prefixed)
+        evidence = (
+            f"prefixed={prefixed[:3]} backstage_tools={backstage[:5]}"
+            if backstage else "no backstage tool_use names found"
+        )
+        return found == expected, evidence
+
     def assert_task_failure_reported(self, expected: bool) -> (bool, str):
-        matched, evidence = self._assistant_text_matches([r"fail"])
+        # Avoid matching hyphenated names like test-failure-repo; require
+        # task/step failure framing.
+        matched, evidence = self._assistant_text_matches(
+            [r"task (has )?failed", r"failed (step|at|during|mid)", r"scaffolder.{0,60}fail",
+             r"mid-?run.{0,20}fail", r"step .{0,40} failed"]
+        )
         return matched == expected, evidence
 
     def assert_confirmation_required(self, expected: bool) -> (bool, str):

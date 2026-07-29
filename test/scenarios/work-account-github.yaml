@@ -7,11 +7,14 @@ feature: destination-scope
 stub_scenario: default
 prompt: /hc-scaffold-service Create a github-repo called billing-service owned by the data team
 compare_prompt: Create a github-repo called billing-service owned by the data team
-expected_output: The assistant proceeds through Backstage without raising any destination-scope question, taking the template's pinned repository owner silently and calling execute-template.
+expected_output: The assistant fetches the template entity, does not report destination-scope rejection, calls execute-template, and submits a repoUrl under the pinned healthcarecom owner.
 replies:
-  - "Yes"
+  - "description: Billing operations and invoice processing service. collaborators: team data with push. Use RepoUrlPicker defaults under healthcarecom."
+  - "Yes, that ownership is correct"
+  - "Yes, submit"
   - "Yes, submit"
 expectations:
   - tool_called: get-catalog-entity
   - tool_called: execute-template
   - destination_scope_reported: false
+  - submitted_value_matches: values.repoUrl=.*healthcarecom.*

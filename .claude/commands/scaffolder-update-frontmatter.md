@@ -24,9 +24,10 @@ For each template, derive 1-3 short, natural phrasings a user would actually typ
 ## 3. Merge into SKILL.md frontmatter
 
 - Read `skills/hc-scaffold-service/SKILL.md` (the copy on this branch — not any path under `.claude/worktrees/`).
-- The frontmatter `description` field has this structure: a sentence describing what the skill does, a sentence starting `Triggers on "..."` listing quoted trigger phrases, then a genericity claim sentence. Only touch the `Triggers on "..."` sentence.
-- Merge the new candidate phrases into that list, de-duplicating case-insensitively against phrases already present. Don't remove existing phrases. Keep the list as a single flat quoted, comma-separated list ending in `, or explicit invocation.` as it does today.
+- The frontmatter `description` uses **INVOKE FOR** / **SKIP** framing (skill-creator tune): a WHAT sentence, then `INVOKE FOR …` (when to activate, with example phrasings), then `SKIP …` (false-positive guards). Only extend the **INVOKE FOR** clause with new natural phrasings derived from live templates. Do not rewrite WHAT or SKIP unless a new phrase would clearly collide with an existing SKIP case — in that case, add a matching `should_not_trigger` row in `skills/hc-scaffold-service/evals/triggers.json` and mention it when you ask the user.
+- Merge candidate phrases into the INVOKE FOR examples/list, de-duplicating case-insensitively. Prefer short natural requests (“create a github repo”) over machine template names. Do not remove existing INVOKE FOR cues.
 - Use `Edit` to apply the change to the frontmatter only. Do not modify any other part of the file.
+- After Keep, remind the user to re-run skill-creator triggers (step 6) — catalog sync changes activation wording.
 
 ## 4. Show the diff
 
@@ -38,5 +39,16 @@ Use `AskUserQuestion` with exactly these three options:
 - **Keep and commit** — stage and commit only `skills/hc-scaffold-service/SKILL.md` with a concise commit message (e.g. `skill: sync trigger phrases with live scaffolder catalog`), then push the current branch to its remote.
 - **Keep but don't commit** — leave the file modified on disk, uncommitted. Do nothing further.
 - **Discard changes** — run `git checkout -- skills/hc-scaffold-service/SKILL.md` to revert.
+
+## 6. After Keep (commit or not): remind about skill-creator triggers
+
+If the user chose either Keep option and the frontmatter `description` actually changed, tell them they must re-run interactive skill-creator triggers before treating activation as verified — the stub harness does not grade triggering. Point them at [docs/triggers.md](../../docs/triggers.md) and print:
+
+```bash
+task test:skill-creator:install
+task test:skill-creator:triggers
+```
+
+If new phrases are broad (e.g. “create a github repo”), also suggest adding matching `should_not_trigger` rows in `skills/hc-scaffold-service/evals/triggers.json` before that tune.
 
 Only commit if the user picks "Keep and commit", and only push after that commit succeeds. Never commit or push on any other path.

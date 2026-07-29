@@ -1,0 +1,14 @@
+name: foreign-org-github
+description: User asks for a github-repo under a foreign org path (docker/), checking destination-scope rejection against RepoUrlPicker allowedOwners
+compare: true
+tier: 2
+type: discipline
+feature: destination-scope
+stub_scenario: default
+prompt: /hc-scaffold-service Create a github-repo called docker/some-container-tool
+compare_prompt: Create a github-repo called docker/some-container-tool
+expected_output: The assistant fetches the template entity, reports that the requested org/owner is outside what the template allows (destination-scope framing), and does not call execute-template.
+expectations:
+  - tool_called: get-catalog-entity
+  - tool_not_called: execute-template
+  - destination_scope_reported: true

@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "confirmation_required: True",
+      "passed": true,
+      "evidence": "assistant text matched /submit\\?/"
+    },
+    {
+      "text": "review_shown: True",
+      "passed": false,
+      "evidence": "assistant text matched none of ['review']"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": false,
+      "evidence": "tool_use name~=execute-template found=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.3333333333333333
+  }
+}

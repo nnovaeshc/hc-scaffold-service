@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "question_count: 0",
+      "passed": true,
+      "evidence": "asked 0 questions, expected 0"
+    },
+    {
+      "text": "tool_not_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "auth_failure_message: True",
+      "passed": true,
+      "evidence": "assistant text matched /auth/"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

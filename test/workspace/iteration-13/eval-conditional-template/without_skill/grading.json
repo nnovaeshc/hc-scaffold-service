@@ -1,0 +1,35 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$",
+      "passed": true,
+      "evidence": "values.componentId='data-processor' vs /^[a-z0-9-]{1,40}$/ matched=True"
+    },
+    {
+      "text": "constraint_violation_reported: False",
+      "passed": true,
+      "evidence": "assistant text matched none of ['violates', 'cannot use', 'not valid', 'too long', 'not allowed', 'does not match', \"doesn't match\", 'constraint issue']"
+    },
+    {
+      "text": "json_path_absent: values.monitoringEndpoint",
+      "passed": true,
+      "evidence": "values.monitoringEndpoint absent from execute-template input"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "2 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

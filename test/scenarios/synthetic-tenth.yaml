@@ -7,7 +7,7 @@ feature: schema-walk
 stub_scenario: default
 prompt: /hc-scaffold-service Create a component using synthetic-tenth-template named data-processor
 compare_prompt: Create a component using synthetic-tenth-template named data-processor
-expected_output: The assistant handles the synthetic template's unfamiliar schema constructs correctly, accepts the schema-compliant name without objection, and reaches the interview or submission with well-formed catalog queries.
+expected_output: The assistant fetches the synthetic template entity, does not report a constraint violation for the compliant name, completes without error, and issues catalog queries that include fields and limit.
 expectations:
   - tool_called: get-catalog-entity
   - constraint_violation_reported: false

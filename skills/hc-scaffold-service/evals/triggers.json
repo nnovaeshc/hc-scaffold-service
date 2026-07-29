@@ -1,16 +1,23 @@
 {
   "skill_name": "hc-scaffold-service",
   "should_trigger": [
-    "I need to create a new Spring Boot service from a Backstage template",
     "Scaffold a Lambda API for me",
+    "I need a new service from a Backstage template",
+    "Create a service for payment callbacks",
+    "Create a component for our catalog",
+    "I want a new service from template without opening the UI",
     "/hc-scaffold-service",
-    "Create a new component using the springboot-microservice template",
-    "I want to create a service but I don't want to open the Backstage UI"
+    "/hc-scaffold-service Create a github-repo called billing-service",
+    "Use the springboot-microservice Backstage template to spin something up"
   ],
   "should_not_trigger": [
     "Refactor this Python module for readability",
     "What is the capital of France?",
     "Open a PR to bump a dependency version only",
-    "Explain how Backstage's catalog model works"
+    "Explain how Backstage's catalog model works",
+    "Create a React component in this frontend app",
+    "docker compose up the payments service",
+    "List the git remotes for this repo",
+    "Write unit tests for the existing owner resolver"
   ]
 }
