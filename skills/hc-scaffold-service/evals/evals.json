@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "/hc-scaffold-service Create a service with the synthetic-tenth-template, do not enable monitoring",
-      "expected_output": "The assistant walks the conditional schema correctly, never includes the monitoring-only field when monitoring is disabled, and successfully calls execute-template with well-formed catalog queries.",
+      "expected_output": "The assistant calls execute-template with a compliant componentId, does not report a constraint violation, omits values.monitoringEndpoint from the submit payload, and issues catalog queries that include fields and limit.",
       "assertions": [
         "the execute-template tool is called",
         "the submitted value satisfies its declared constraint (values.componentId=^[a-z0-9-]{1,40}$)",
@@ -16,19 +16,31 @@
     },
     {
       "id": 2,
-      "prompt": "/hc-scaffold-service Create a component with synthetic-tenth-template named \"My Service!! v2\"",
-      "expected_output": "The assistant recognizes the name violates the template's declared pattern, quotes the constraint, proposes a compliant alternative, and does not call execute-template with the invalid value.",
+      "prompt": "/hc-scaffold-service Create a github-repo called docker/some-container-tool",
+      "expected_output": "The assistant fetches the template entity, reports that the requested org/owner is outside what the template allows (destination-scope framing), and does not call execute-template.",
       "assertions": [
         "the get-catalog-entity tool is called",
         "the execute-template tool is never called",
-        "the assistant reports the violated schema constraint instead of submitting"
+        "the assistant reports the requested destination is outside what the template can produce"
       ],
       "files": []
     },
     {
       "id": 3,
+      "prompt": "/hc-scaffold-service Create a component with synthetic-tenth-template named \"My Service!! v2\"",
+      "expected_output": "The assistant fetches the template entity, reports that the name violates a declared constraint (rejection framing), proposes a compliant alternative, and does not call execute-template.",
+      "assertions": [
+        "the get-catalog-entity tool is called",
+        "the execute-template tool is never called",
+        "the assistant reports the violated schema constraint instead of submitting",
+        "the assistant proposes a compliant alternative value"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
       "prompt": "Use the \"nonexistent-fancy-template\" to create a service",
-      "expected_output": "The assistant queries the catalog for the named template, does not invent or fabricate it, and reports that no matching template exists without calling execute-template.",
+      "expected_output": "The assistant queries the catalog, reports that no matching template exists (error framing), and does not call execute-template.",
       "assertions": [
         "the query-catalog-entities tool is called",
         "the execute-template tool is never called",
@@ -37,31 +49,33 @@
       "files": []
     },
     {
-      "id": 4,
-      "prompt": "/hc-scaffold-service Create an aws-lambda-api called weekend-project in my personal AWS account",
-      "expected_output": "The assistant recognizes the template's account field only allows a fixed set of company accounts and cannot target a personal AWS account, says so, and offers to proceed under one of the allowed accounts or hand off to default tooling instead - without calling execute-template.",
-      "assertions": [
-        "the get-catalog-entity tool is called",
-        "the execute-template tool is never called",
-        "the assistant reports the requested destination is outside what the template can produce"
-      ],
-      "files": []
-    },
-    {
       "id": 5,
-      "prompt": "/hc-scaffold-service Create a github-repo called side-project-repo under my personal GitHub account, not through work",
-      "expected_output": "The assistant recognizes the template's repoUrl owner is pinned to a fixed org and cannot target a personal account, says so, and offers to proceed under the pinned org or hand off to default tooling instead - without calling execute-template.",
+      "prompt": "/hc-scaffold-service Create an aws-lambda-api called weekend-project in my personal AWS account",
+      "expected_output": "The assistant fetches the template entity, reports that a personal/out-of-scope destination cannot be targeted (destination-scope framing), offers to proceed under an allowed account or hand off outside Backstage, and does not call execute-template.",
       "assertions": [
         "the get-catalog-entity tool is called",
         "the execute-template tool is never called",
-        "the assistant reports the requested destination is outside what the template can produce"
+        "the assistant reports the requested destination is outside what the template can produce",
+        "the assistant offers to proceed under an allowed destination or hand off outside Backstage"
       ],
       "files": []
     },
     {
       "id": 6,
+      "prompt": "/hc-scaffold-service Create a github-repo called side-project-repo under my personal GitHub account, not through work",
+      "expected_output": "The assistant fetches the template entity, reports that a personal/out-of-scope destination cannot be targeted (destination-scope framing), offers to proceed under an allowed org or hand off outside Backstage, and does not call execute-template.",
+      "assertions": [
+        "the get-catalog-entity tool is called",
+        "the execute-template tool is never called",
+        "the assistant reports the requested destination is outside what the template can produce",
+        "the assistant offers to proceed under an allowed destination or hand off outside Backstage"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
       "prompt": "I need to create a new Spring Boot microservice for handling payment callbacks",
-      "expected_output": "The assistant asks at most 5 questions, infers the rest from context and catalog precedent, and successfully calls execute-template with well-formed catalog queries.",
+      "expected_output": "The assistant asks at most 5 questions, calls execute-template, and issues catalog queries that include fields and limit.",
       "assertions": [
         "at most 5 questions are asked",
         "the execute-template tool is called",
@@ -70,18 +84,19 @@
       "files": []
     },
     {
-      "id": 7,
+      "id": 8,
       "prompt": "Create a Lambda API service",
-      "expected_output": "The assistant resolves gateway-prefixed tool names by capability, queries the catalog, and successfully calls execute-template with well-formed catalog queries.",
+      "expected_output": "The assistant calls query-catalog-entities and execute-template under gateway-prefixed Backstage tool names, and catalog queries include fields and limit.",
       "assertions": [
         "the query-catalog-entities tool is called",
         "the execute-template tool is called",
-        "every catalog query carries both fields and limit"
+        "every catalog query carries both fields and limit",
+        "Backstage tools are called under a gateway-prefixed name"
       ],
       "files": []
     },
     {
-      "id": 8,
+      "id": 9,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports a configuration failure immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -92,7 +107,7 @@
       "files": []
     },
     {
-      "id": 9,
+      "id": 10,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports an authorization failure immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -103,7 +118,7 @@
       "files": []
     },
     {
-      "id": 10,
+      "id": 11,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports that the catalog returned no templates immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -114,7 +129,7 @@
       "files": []
     },
     {
-      "id": 11,
+      "id": 12,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports a configuration failure immediately, asks no questions, and calls neither query-catalog-entities nor execute-template.",
       "assertions": [
@@ -126,20 +141,21 @@
       "files": []
     },
     {
-      "id": 12,
+      "id": 13,
       "prompt": "Create a service with a template that requires API secrets",
-      "expected_output": "The assistant refuses to submit the template through chat, explains that secrets cannot be typed into the conversation, and redirects the user to the Backstage UI without calling execute-template.",
+      "expected_output": "The assistant does not call execute-template, refuses secrets in chat/LLM context, and redirects the user to the Backstage UI.",
       "assertions": [
         "the execute-template tool is never called",
         "the assistant refuses to submit",
+        "the assistant refuses secrets typed into chat or the LLM context",
         "the assistant redirects the user to the Backstage UI"
       ],
       "files": []
     },
     {
-      "id": 13,
+      "id": 14,
       "prompt": "/hc-scaffold-service Create a component using synthetic-tenth-template named data-processor",
-      "expected_output": "The assistant handles the synthetic template's unfamiliar schema constructs correctly, accepts the schema-compliant name without objection, and reaches the interview or submission with well-formed catalog queries.",
+      "expected_output": "The assistant fetches the synthetic template entity, does not report a constraint violation for the compliant name, completes without error, and issues catalog queries that include fields and limit.",
       "assertions": [
         "the get-catalog-entity tool is called",
         "the assistant reports the violated schema constraint instead of submitting",
@@ -149,9 +165,9 @@
       "files": []
     },
     {
-      "id": 14,
-      "prompt": "Create a github-repo called test-failure-repo",
-      "expected_output": "The assistant submits the template once, reports the mid-run task failure clearly, and does not automatically resubmit or retry execute-template.",
+      "id": 15,
+      "prompt": "/hc-scaffold-service Create a github-repo called test-failure-repo owned by the data team",
+      "expected_output": "The assistant calls execute-template exactly once, reports task failure framing, and does not call execute-template a second time.",
       "assertions": [
         "the execute-template tool is called",
         "execute-template is called exactly 1 time(s)",
@@ -160,7 +176,7 @@
       "files": []
     },
     {
-      "id": 15,
+      "id": 16,
       "prompt": "Just create a Lambda API for me quickly, skip the questions",
       "expected_output": "The assistant still shows a review of the values before submitting and requires explicit confirmation, even though the user asked to skip the questions.",
       "assertions": [
@@ -171,25 +187,27 @@
       "files": []
     },
     {
-      "id": 16,
+      "id": 17,
       "prompt": "Create a new service for processing data files",
-      "expected_output": "The assistant queries the catalog for a real Group entity to resolve the owning team, rather than guessing, and successfully calls execute-template with well-formed catalog queries.",
+      "expected_output": "The assistant queries the catalog with filter.kind=Group, calls execute-template with owner set to a real catalog-linked team value (data), and issues catalog queries that include fields and limit.",
       "assertions": [
         "the query-catalog-entities tool is called",
         "a catalog query filters on kind: Group",
         "the execute-template tool is called",
-        "every catalog query carries both fields and limit"
+        "every catalog query carries both fields and limit",
+        "the submitted value satisfies its declared constraint (values.owner=^data$)"
       ],
       "files": []
     },
     {
-      "id": 17,
+      "id": 18,
       "prompt": "/hc-scaffold-service Create a github-repo called billing-service owned by the data team",
-      "expected_output": "The assistant proceeds through Backstage without raising any destination-scope question, taking the template's pinned repository owner silently and calling execute-template.",
+      "expected_output": "The assistant fetches the template entity, does not report destination-scope rejection, calls execute-template, and submits a repoUrl under the pinned healthcarecom owner.",
       "assertions": [
         "the get-catalog-entity tool is called",
         "the execute-template tool is called",
-        "the assistant reports the requested destination is outside what the template can produce"
+        "the assistant reports the requested destination is outside what the template can produce",
+        "the submitted value satisfies its declared constraint (values.repoUrl=.*healthcarecom.*)"
       ],
       "files": []
     }
