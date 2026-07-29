@@ -208,8 +208,12 @@ class TranscriptAsserter:
         return matched == expected, evidence
 
     def assert_constraint_violation_reported(self, expected: bool) -> (bool, str):
+        """Rejection framing only. A bare `pattern` or `constraint` would also
+        match the model merely listing a field's keywords while classifying, and
+        "Constraint" is a provenance tag in the review table - so both would
+        make `expected: false` unusable as an over-blocking control."""
         matched, evidence = self._assistant_text_matches(
-            [r"must match", r"invalid", r"constraint", r"pattern", r"too long", r"not allowed"]
+            [r"must match", r"violates", r"cannot use", r"not valid", r"too long", r"not allowed"]
         )
         return matched == expected, evidence
 

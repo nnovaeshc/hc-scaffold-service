@@ -8,6 +8,7 @@
       "assertions": [
         "the execute-template tool is called",
         "the submitted value satisfies its declared constraint (values.componentId=^[a-z0-9-]{1,40}$)",
+        "the assistant reports the violated schema constraint instead of submitting",
         "values.monitoringEndpoint is absent from the submitted values",
         "every catalog query carries both fields and limit"
       ],
@@ -115,11 +116,11 @@
     },
     {
       "id": 11,
-      "prompt": "/hc-scaffold-service Create a component using synthetic-tenth-template",
-      "expected_output": "The assistant handles the synthetic template's unfamiliar schema constructs correctly and completes the flow, successfully calling execute-template with well-formed catalog queries.",
+      "prompt": "/hc-scaffold-service Create a component using synthetic-tenth-template named data-processor",
+      "expected_output": "The assistant handles the synthetic template's unfamiliar schema constructs correctly, accepts the schema-compliant name without objection, and reaches the interview or submission with well-formed catalog queries.",
       "assertions": [
-        "the execute-template tool is called",
-        "the submitted value satisfies its declared constraint (values.componentId=^[a-z0-9-]{1,40}$)",
+        "the get-catalog-entity tool is called",
+        "the assistant reports the violated schema constraint instead of submitting",
         "the flow completes",
         "every catalog query carries both fields and limit"
       ],

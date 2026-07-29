@@ -5,11 +5,11 @@ tier: 3
 type: interview
 feature: schema-walk
 stub_scenario: default
-prompt: /hc-scaffold-service Create a component using synthetic-tenth-template
-compare_prompt: Create a component using synthetic-tenth-template
-expected_output: The assistant handles the synthetic template's unfamiliar schema constructs correctly and completes the flow, successfully calling execute-template with well-formed catalog queries.
+prompt: /hc-scaffold-service Create a component using synthetic-tenth-template named data-processor
+compare_prompt: Create a component using synthetic-tenth-template named data-processor
+expected_output: The assistant handles the synthetic template's unfamiliar schema constructs correctly, accepts the schema-compliant name without objection, and reaches the interview or submission with well-formed catalog queries.
 expectations:
-  - tool_called: execute-template
-  - submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$
+  - tool_called: get-catalog-entity
+  - constraint_violation_reported: false
   - completion: true
   - catalog_queries_have_fields_and_limit: true

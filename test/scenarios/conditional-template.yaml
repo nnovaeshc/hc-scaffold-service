@@ -11,5 +11,6 @@ expected_output: The assistant walks the conditional schema correctly, never inc
 expectations:
   - tool_called: execute-template
   - submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$
+  - constraint_violation_reported: false
   - json_path_absent: values.monitoringEndpoint
   - catalog_queries_have_fields_and_limit: true
