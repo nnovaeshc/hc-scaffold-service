@@ -1,0 +1,313 @@
+# nonk8s
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: springboot-template
+  title: Springboot microservice template
+  description: This template will help you get started with your new java 21 springboot microservice
+  tags:
+    - java
+    - spring-boot
+spec:
+  owner: infrastructure-platform
+  type: service
+  parameters:
+    - title: Fill in some steps
+      required:
+        - appName
+        - port
+        - company
+        - owner
+        - businessUnit
+        - injectToServiceMesh
+        - apiGatewayEnabled
+        - cpu
+        - ram
+        - cpuArchitecture
+      properties:
+        appName:
+          title: Application name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        port:
+          title: Port
+          type: string
+          description: Server port
+          default: "9000"
+        company:
+          title: Company
+          type: string
+          description: The company identifier
+          enum:
+            - hc
+            - ph
+          enumNames:
+            - Healthcare.com
+            - Pivot Health
+        owner:
+          title: owner
+          type: string
+          description: The team that owns the microservice.
+          enum:
+            - marketplace-platform
+            - pivot-health-insurtech-platform
+            - data
+            - infrastructure-platform
+          enumNames:
+            - Marketplace Platform
+            - Pivot Health
+            - Data
+            - Infrastructure Platform
+        businessUnit:
+          title: Business unit
+          type: string
+          description: Business unit name
+        injectToServiceMesh:
+          title: Inject to service mesh
+          description: Allow this service to be exposed into the service mesh.
+          type: string
+          default: enabled
+          enum:
+            - enabled
+            - disabled
+        apiGatewayEnabled:
+          title: API gateway enabled
+          description: Expose this service with the API Gateway
+          default: false
+          type: boolean
+        cpu:
+          title: CPU
+          type: string
+          description: CPU requested resources and resource limit
+          default: 512m
+        ram:
+          title: RAM
+          type: string
+          description: RAM requested resources and resource limit
+          default: 512Mi
+        cpuArchitecture:
+          title: CPU Architecture
+          type: string
+          description: CPU Architecture
+          enum:
+            - linux/amd64
+            - linux/arm64
+          default: linux/amd64
+        includeSqs:
+          title: Include SQS integration
+          type: boolean
+          default: false
+
+    - title: Deploy to QA/STG
+      required: []
+      properties:
+        qaEnabled:
+          title: Enable QA Environment
+          type: boolean
+          default: false
+        stgEnabled:
+          title: Enable STG Environment
+          type: boolean
+          default: false
+        nonPrdAccount:
+          title: AWS Account
+          description: AWS Account
+          enum:
+            - 445865052481
+            - 980767267004
+            - 396654217096
+          enumNames:
+            - 'Healthcare Marketplace DEV'
+            - 'PivotHealth DEV'
+            - 'Devops Tooling'
+
+    - title: Deploy to PROD
+      required: [ ]
+      properties:
+        prdEnabled:
+          title: Enable PROD Environment
+          type: boolean
+          default: false
+        prdAccount:
+          title: AWS Account
+          description: AWS Account
+          enum:
+            - 505756806474
+            - 133125587702
+            - 396654217096
+          enumNames:
+            - 'Healthcare Marketplace PROD'
+            - 'PivotHealth PROD'
+            - 'Devops Tooling'
+
+    - title: Choose a location
+      required:
+        - repoUrl
+        - collaborators
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - healthcarecom
+        collaborators:
+          type: array
+          title: GitHub teams permissions
+          items:
+            type: 'object'
+            required: [ 'team','access' ]
+            properties:
+              access:
+                type: string
+                description: 'The type of access to the group'
+                enum: [ 'push','pull','admin','maintain','triage' ]
+              team:
+                type: string
+                description: Group
+                ui:field: OwnerPicker
+                ui:options:
+                  catalogFilter:
+                    kind: Group
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          app_name: ${{ parameters.appName }}
+          port: ${{ parameters.port }}
+          company: ${{ parameters.company }}
+          owner: ${{ parameters.owner }}
+          qaAccount: ${{ parameters.nonPrdAccount }}
+          stgAccount: ${{ parameters.nonPrdAccount }}
+          prdAccount: ${{ parameters.prdAccount }}
+          businessUnit: ${{ parameters.businessUnit }}
+          injectToServiceMesh: ${{ parameters.injectToServiceMesh }}
+          apiGatewayEnabled: ${{ parameters.apiGatewayEnabled }}
+          cpu: ${{ parameters.cpu }}
+          ram: ${{ parameters.ram }}
+          cpuArchitecture: ${{ parameters.cpuArchitecture }}
+          includeSqs: ${{ parameters.includeSqs }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+    - name: Delete SQS files if not required
+      if: ${{ not parameters.includeSqs }}
+      action: fs:delete
+      input:
+        files:
+          - localstack_bootstrap
+          - src/main/java/com/healthcare/backend/api/MessagingController.java
+          - src/main/java/com/healthcare/backend/config/SqsConfiguration.java
+          - src/main/java/com/healthcare/backend/messaging
+          - src/test/java/com/healthcare/backend/api/MessagingControllerTest.java
+          - src/test/java/com/healthcare/backend/messaging
+
+
+    - name: Delete QA configuration if not required
+      if: ${{ not parameters.qaEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/qa.yaml
+
+    - name: Delete STG configuration if not required
+      if: ${{ not parameters.stgEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/stg.yaml
+
+    - name: Delete PRD configuration if not required
+      if: ${{ not parameters.prdEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/prd.yaml
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: 'private'
+        defaultBranch: main
+        gitAuthorName: ${{ user.entity.metadata.name }}
+        collaborators: ${{ parameters.collaborators }}
+        bypassPullRequestAllowances:
+          apps:
+            - hc-devops-automation-app
+        requireCodeOwnerReviews: true
+        requiredConversationResolution: true
+        deleteBranchOnMerge: true
+        topics: ["${{ parameters.company }}-${{ parameters.owner}}"]
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+    - id: fetch-argocd-app
+      name: Fetch ArgoCD app templates
+      action: fetch:template
+      cookiecutterCompat: false
+      input:
+        url: https://github.com/healthcarecom/platform-backstage-templates/tree/main/argocd-app/template
+        values:
+          company: ${{parameters.company}}
+          app_name: ${{parameters.appName}}
+          owner: ${{parameters.owner}}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - name: Delete ArgoCD QA configuration if not required
+      if: ${{ not parameters.qaEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - argocd-apps/qa-app.yaml
+
+    - name: Delete ArgoCD STG configuration if not required
+      if: ${{ not parameters.stgEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - argocd-apps/stg-app.yaml
+
+    - name: Delete ArgoCD PRD configuration if not required
+      if: ${{ not parameters.prdEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - argocd-apps/prd-app.yaml
+
+    - id: argo-cd-app-pr
+      name: Create pull request to create ArgoCD apps
+      action: publish:github:pull-request
+      update: true
+      input:
+        repoUrl: github.com?repo=platform-infrastructure-k8s-state&owner=healthcarecom
+        branchName: "${{ parameters.company }}-${{ parameters.appName }}-argocd-app"
+        targetBranchName: "main"
+        title: "Create ArgoCD app for ${{ parameters.appName }}"
+        description: "Create ArgoCD app for ${{ parameters.appName }}, this  will deploy the ${{ parameters.appName }} to the k8s cluster automatically after merging it to the main branch"
+        sourcePath: "argocd-apps/"
+        targetPath: "teams/${{ parameters.owner | getTeamName }}/applications/${{ parameters.appName }}"
+
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

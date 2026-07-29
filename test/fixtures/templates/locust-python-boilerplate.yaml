@@ -1,0 +1,231 @@
+# nonk8s
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: locust-python-boilerplate
+  title: Locust Load Testing
+  description: Creates a Locust Load Testing project
+  tags:
+    - locust
+    - load-testing
+spec:
+  owner: infrastructure-platform
+  type: service
+  # these are the steps which are rendered in the frontend with the form input
+  parameters:
+    - title: Fill in some steps
+      required:
+        - name
+        - description
+        - replicas
+        - account
+        - cluster
+        - company
+        - owner
+        - environment
+        - businessUnit
+        - hostname
+        - paths
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:help: 'Please avoid spaces'
+          ui:options:
+            rows: 5
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this project is for.
+        replicas:
+          title: Workers
+          type: integer
+          description: Specify the amount of workers needed
+        account:
+          title: AWS Account
+          description: AWS Account
+          enum:
+            - 807165945434
+            - 445865052481
+            - 505756806474
+            - 980767267004
+            - 133125587702
+            - 396654217096
+          enumNames:
+            - 'Healthcare Data Engineering PROD'
+            - 'Healthcare Marketplace DEV'
+            - 'Healthcare Marketplace PROD'
+            - 'PivotHealth DEV'
+            - 'PivotHealth PROD'
+            - 'Devops Tooling'
+        cluster:
+          title: EKS Cluster
+          description: EKS Cluster
+          enum:
+            - 'https://C3A567D0FE49372F569C206C74243B40.gr7.us-east-1.eks.amazonaws.com' # REF QA
+            - 'https://2A05F9F2F29EAA0C508746A7C1EBE66E.gr7.us-east-1.eks.amazonaws.com' # REF STG
+            - 'https://53781EDC47C7BC82C1536BF511FF71D3.gr7.us-east-1.eks.amazonaws.com' # REF PRD
+            - 'https://1AED6C2485811FB6700A129103DD6341.gr7.us-east-1.eks.amazonaws.com' # PH QA
+            - 'https://A613C87907D5B997EB4D10F61692384E.sk1.us-east-1.eks.amazonaws.com' # PH STG
+            - 'https://20DA8EFC0E37B47E324DCD790CF4F51F.gr7.us-east-1.eks.amazonaws.com' # PH PRD
+            - 'https://9820777E3670EA864D29C44EF039ACE5.gr7.us-east-1.eks.amazonaws.com' # DATA PRD
+            - 'https://kubernetes.default.svc'
+          enumNames:
+            - 'Marketplace QA'
+            - 'Marketplace STG'
+            - 'Marketplace PRD'
+            - 'PivotHealth QA'
+            - 'PivotHealth STG'
+            - 'PivotHealth PRD'
+            - 'Data Engineering PRD'
+            - 'Devops Tooling'
+        company:
+          title: Company
+          type: string
+          description: The company identifier
+          enum:
+            - hc
+            - ph
+          enumNames:
+            - Healthcare.com
+            - Pivot Health
+        owner:
+          company:
+            title: Company
+            type: string
+            description: company name
+          title: Owner
+          type: string
+          description: The team that owns the load testing function.
+          enum:
+            - marketplace-platform
+            - pivot-health-insurtech-platform
+            - data
+            - infrastructure-platform
+          enumNames:
+            - Marketplace Platform
+            - Pivot Health
+            - Data
+            - Infrastructure Platform
+        environment:
+          title: Environment
+          type: string
+          description: Environment
+          enum:
+            - dev
+            - qa
+            - stg
+            - prd
+        businessUnit:
+          title: Business Unit
+          type: string
+          description: Business Unit tag to be added to all functions
+          ui:options:
+            rows: 5
+        hostname:
+          title: Hostname
+          type: string
+          description: Input the hostname to test (including http:// or https://)
+          ui:options:
+            rows: 5
+        paths:
+          title: URL Paths
+          type: array
+          description: Input the relative paths to test including leading backslash
+          minItems: 1
+          default: []
+          items:
+            type: string
+          ui:options:
+            orderable: false
+    - title: Choose a location
+      required:
+        - repoUrl
+        - collaborators
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - healthcarecom
+        collaborators:
+          type: array
+          title: GitHub teams permissions
+          items:
+            type: 'object'
+            required: ['team','access']
+            properties:
+              access:
+                type: string
+                description: 'The type of access to the group'
+                enum: ['push','pull','admin','maintain','triage']
+              team:
+                type: string
+                description: Group
+                ui:field: OwnerPicker
+                ui:options:
+                  catalogFilter:
+                    kind: Group
+
+  # here's the steps that are executed in series in the scaffolder backend
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          service: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          company: ${{ parameters.company }}
+          environment: ${{ parameters.environment }}
+          account: ${{ parameters.account }}
+          cluster: ${{ parameters.cluster }}
+          hostname: ${{ parameters.hostname }}
+          paths: ${{ parameters.paths }}
+          businessUnit: ${{ parameters.businessUnit }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+          replicas: ${{ parameters.replicas }}
+
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: ${{ parameters.name }} load testing repository
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: 'private'
+        defaultBranch: main
+        gitAuthorName: ${{ user.entity.metadata.name }}
+        collaborators: ${{ parameters.collaborators }}
+        bypassPullRequestAllowances:
+          apps:
+            - hc-devops-automation-app
+        requireCodeOwnerReviews: true
+        requiredConversationResolution: true
+        deleteBranchOnMerge: true
+        topics: [ 'hc-locust' ]
+
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  # some outputs which are saved along with the job for use in the frontend
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

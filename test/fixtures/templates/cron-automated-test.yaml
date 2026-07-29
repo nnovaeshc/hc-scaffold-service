@@ -1,0 +1,160 @@
+# nonk8s
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cron-automated-test-template
+  title: Cron Automated Test Template
+  description: This template will help you to create a scheduled automated test
+  tags:
+    - cucumber
+    - js
+spec:
+  owner: infrastructure-platform
+  type: service
+  parameters:
+    - title: Fill in some steps
+      required:
+        - workflowName
+        - tags
+        - cron
+
+      properties:
+        workflowName:
+          title: WorkflowName
+          type: string
+          description: Workflow name, e.g my-workflow-name
+          pattern: "^[a-z0-9_-]+$"
+        tags:
+          title: Tags
+          type: string
+          description: Checkout cucumber official docs for allowed tags combination https://cucumber.io/docs/cucumber/api/#tags
+        cron:
+          title: Cron Expression
+          description: Cron expression - Standard cron syntax https://crontab.guru
+          type: string
+        branchName:
+          title: Branch Name
+          type: string
+          description: Branch Name
+          default: 'main'
+        repoName:
+          title: Repository Name
+          type: string
+          description: Repository Name
+          default: 'https://github.com/healthcarecom/automated-testing-platform.git'
+        cpu:
+          title: CPU
+          type: string
+          description: CPU requested resources and resource limit
+          default: 256m
+        ram:
+          title: RAM
+          type: string
+          description: RAM requested resources and resource limit
+          default: 512Mi
+        cpuArchitecture:
+          title: CPU Architecture
+          type: string
+          description: CPU Architecture
+          enum:
+            - amd64
+            - arm64
+          default: amd64
+
+    - title: Environments
+      required: [ ]
+      properties:
+        qaEnabled:
+          title: Create on QA Environment
+          type: boolean
+          default: false
+        stgEnabled:
+          title: Create on STG Environment
+          type: boolean
+          default: false
+        prdEnabled:
+          title: Create on PRD Environment
+          type: boolean
+          default: false
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          workflowName: ${{ parameters.workflowName }}
+          cron: ${{ parameters.cron }}
+          tags: ${{ parameters.tags }}
+          branchName: ${{ parameters.branchName }}
+          repoName: ${{ parameters.repoName }}
+          cpu: ${{ parameters.cpu }}
+          ram: ${{ parameters.ram }}
+          cpuArchitecture: ${{ parameters.cpuArchitecture }}
+
+    - name: Delete QA configuration if not required
+      if: ${{ not parameters.qaEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/qa/qa.yaml
+
+    - name: Delete STG configuration if not required
+      if: ${{ not parameters.stgEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/stg/stg.yaml
+
+    - name: Delete PRD configuration if not required
+      if: ${{ not parameters.prdEnabled }}
+      action: fs:delete
+      input:
+        files:
+          - .hc-k8s/prd/prd.yaml
+
+    - name: Rename QA file
+      if: ${{ parameters.qaEnabled }}
+      action: fs:rename
+      input:
+        files:
+          - from: .hc-k8s/qa/qa.yaml
+            to: .hc-k8s/qa/${{ parameters.workflowName }}.yaml
+
+    - name: Rename STG file
+      if: ${{ parameters.stgEnabled }}
+      action: fs:rename
+      input:
+        files:
+          - from: .hc-k8s/stg/stg.yaml
+            to: .hc-k8s/stg/${{ parameters.workflowName }}.yaml
+
+    - name: Rename PRD file
+      if: ${{ parameters.prdEnabled }}
+      action: fs:rename
+      input:
+        files:
+          - from: .hc-k8s/prd/prd.yaml
+            to: .hc-k8s/prd/${{ parameters.workflowName }}.yaml
+
+    - id: cron-test-pr
+      name: Create pull request to Cron Automated Test
+      action: publish:github:pull-request
+      update: true
+      input:
+        repoUrl: github.com?repo=automated-testing-platform&owner=healthcarecom
+        branchName: "feat/${{ parameters.workflowName }}-cron-test"
+        targetBranchName: "main"
+        title: "Create Cron Automated Test - ${{ parameters.workflowName }}"
+        description: "Create Cron Automated Test ${{ parameters.workflowName }}, this  will deploy the ${{ parameters.workflowName }} to the k8s cluster automatically after merging it to the main branch"
+        sourcePath: ".hc-k8s"
+        targetPath: ".hc-k8s"
+
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['cron-test-pr'].output.remoteUrl }}
+

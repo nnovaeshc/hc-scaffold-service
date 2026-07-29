@@ -1,0 +1,78 @@
+[
+  {
+    "id": "1",
+    "taskId": "task-123",
+    "type": "log",
+    "body": {
+      "message": "Starting scaffolder task",
+      "stepId": "init",
+      "status": "processing"
+    },
+    "createdAt": "2024-01-15T10:00:00Z"
+  },
+  {
+    "id": "2",
+    "taskId": "task-123",
+    "type": "completion",
+    "body": {
+      "message": "Initializing workspace",
+      "stepId": "init",
+      "status": "completed"
+    },
+    "createdAt": "2024-01-15T10:00:05Z"
+  },
+  {
+    "id": "3",
+    "taskId": "task-123",
+    "type": "log",
+    "body": {
+      "message": "Fetching template",
+      "stepId": "fetch-template",
+      "status": "processing"
+    },
+    "createdAt": "2024-01-15T10:00:06Z"
+  },
+  {
+    "id": "4",
+    "taskId": "task-123",
+    "type": "completion",
+    "body": {
+      "message": "Template fetched successfully",
+      "stepId": "fetch-template",
+      "status": "completed"
+    },
+    "createdAt": "2024-01-15T10:00:10Z"
+  },
+  {
+    "id": "5",
+    "taskId": "task-123",
+    "type": "log",
+    "body": {
+      "message": "Creating GitHub repository",
+      "stepId": "publish-github",
+      "status": "processing"
+    },
+    "createdAt": "2024-01-15T10:00:11Z"
+  },
+  {
+    "id": "6",
+    "taskId": "task-123",
+    "type": "completion",
+    "body": {
+      "message": "Repository created at https://github.com/example-org/test-service",
+      "stepId": "publish-github",
+      "status": "completed"
+    },
+    "createdAt": "2024-01-15T10:00:20Z"
+  },
+  {
+    "id": "7",
+    "taskId": "task-123",
+    "type": "completion",
+    "body": {
+      "message": "All steps completed successfully",
+      "status": "completed"
+    },
+    "createdAt": "2024-01-15T10:00:21Z"
+  }
+]

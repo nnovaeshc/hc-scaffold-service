@@ -1,0 +1,173 @@
+#nonk8s
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: aws-lambda-cron
+  title: AWS Lambda CronJob
+  description: Creates an AWS Lambda with a CronJob
+  tags:
+    - aws
+    - lambda
+spec:
+  owner: infrastructure-platform
+  type: service
+  # these are the steps which are rendered in the frontend with the form input
+  parameters:
+    - title: Fill in some steps
+      required:
+        - name
+        - description
+        - account
+        - owner
+        - environments
+        - company
+        - businessUnit
+        - cron
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:options:
+            rows: 5
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this project is for.
+        account:
+          title: AWS Account
+          description: AWS Account
+          enum:
+            - 915124832670
+            - 807165945434
+            - 445865052481
+            - 505756806474
+            - 980767267004
+            - 133125587702
+          enumNames:
+            - 'Healthcare Inc'
+            - 'Healthcare Data Engineering PROD'
+            - 'Healthcare Marketplace DEV'
+            - 'Healthcare Marketplace PROD'
+            - 'PivotHealth DEV'
+            - 'PivotHealth PROD'
+        cron:
+          title: Cron Expression
+          description: AWS cron expression https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+          type: string
+        company:
+          title: Company
+          type: string
+          description: The company identifier
+          enum:
+            - hc
+            - ph
+            - hcc-rx
+            - srx
+        owner:
+          company:
+            title: Company
+            type: string
+            description: company name
+          title: Owner
+          type: string
+          description: The tripod team that owns the lambda function.
+          enum:
+            - marketplace-platform
+            - pivot-health-insurtech-platform
+            - data
+            - infrastructure-platform
+        environments:
+          title: Environments
+          type: string
+          description: Comma separated environments
+        businessUnit:
+          title: Business Unit
+          type: string
+          description: Business Unit tag to be added to all functions
+          ui:options:
+            rows: 5
+    - title: Choose a location
+      required:
+        - repoUrl
+        - collaborators
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - healthcarecom
+        collaborators:
+          type: array
+          title: GitHub teams permissions
+          items:
+            type: 'object'
+            required: [ 'team','access' ]
+            properties:
+              access:
+                type: string
+                description: 'The type of access to the group'
+                enum: [ 'push','pull','admin','maintain','triage' ]
+              team:
+                type: string
+                description: Group
+                ui:field: OwnerPicker
+                ui:options:
+                  catalogFilter:
+                    kind: Group
+
+  # here's the steps that are executed in series in the scaffolder backend
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          service: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          company: ${{ parameters.company }}
+          environments: ${{ parameters.environments }}
+          account: ${{ parameters.account }}
+          businessUnit: ${{ parameters.businessUnit }}
+          cron: ${{ parameters.cron }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: ${{ parameters.name }} SAM repository
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: 'private'
+        defaultBranch: main
+        gitAuthorName: ${{ user.entity.metadata.name }}
+        collaborators: ${{ parameters.collaborators }}
+        bypassPullRequestAllowances:
+          apps:
+            - hc-devops-automation-app
+        requireCodeOwnerReviews: true
+        requiredConversationResolution: true
+        deleteBranchOnMerge: true
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  # some outputs which are saved along with the job for use in the frontend
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

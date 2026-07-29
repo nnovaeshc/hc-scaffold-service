@@ -1,0 +1,120 @@
+# nonk8s
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: hc-github-repository
+  title: New GitHub Empty Repository
+  description: This template will help you creating a new empty GitHub repository with Healthcare's best practices
+  tags:
+    - github
+spec:
+  owner: infrastructure-platform
+  type: repository
+  parameters:
+    - title: Fill in some steps
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:options:
+            rows: 5
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this project is for.
+        owner:
+          title: owner
+          type: string
+          description: The team that owns the repository.
+          enum:
+            - marketplace
+            - insurance-products
+            - data
+            - infrastructure-platform
+          enumNames:
+            - Marketplace
+            - Pivot Health
+            - Data
+            - Infrastructure Platform
+
+    - title: Choose a location
+      required:
+        - repoUrl
+        - collaborators
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+            allowedOwners:
+              - healthcarecom
+        collaborators:
+          type: array
+          title: GitHub teams permissions
+          items:
+            type: 'object'
+            required: [ 'team','access' ]
+            properties:
+              access:
+                type: string
+                description: 'The type of access to the group'
+                enum: [ 'push','pull','admin','maintain','triage' ]
+              team:
+                type: string
+                description: Group
+                ui:field: OwnerPicker
+                ui:options:
+                  catalogFilter:
+                    kind: Group
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          service: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: 'private'
+        requireCodeOwnerReviews: true
+        deleteBranchOnMerge: true
+        defaultBranch: main
+        requireLastPushApproval: true
+        requiredConversationResolution: true
+        collaborators: ${{ parameters.collaborators }}
+        access: healthcarecom/${{ parameters.owner }}
+        topics:
+          - backup-enabled
+        sourcePath: "./base"
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

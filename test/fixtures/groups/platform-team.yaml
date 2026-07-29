@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  title: Platform Team
+  description: Infrastructure and platform services team
+spec:
+  type: team
+  profile:
+    displayName: Platform Team
+    email: platform@example.com
+  children: []

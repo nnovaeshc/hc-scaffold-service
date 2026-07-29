@@ -1,0 +1,231 @@
+# nonk8s
+# yaml-language-server: $schema=false
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: mcp-server
+  title: MCP Server
+  description: This template creates a MCP server.
+  tags:
+    - mcp
+    - ai
+    - python
+    - typescript
+spec:
+  owner: infrastructure-platform
+  type: service
+  parameters:
+    - title: Fill in some steps
+      required:
+        - name
+        - language
+        - company
+        - owner
+        - businessUnit
+        - cpu
+        - ram
+      properties:
+        name:
+          title: Name
+          type: string
+          maxLength: 63
+          description: Unique name of the component (max 63 chars)
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        language:
+          title: Programming Language
+          type: string
+          description: Desired programming language
+          enum:
+            - python
+            - typescript
+          enumNames:
+            - Python
+            - TypeScript
+        company:
+          title: Company
+          type: string
+          description: The company identifier
+          enum:
+            - hc
+            - ph
+          enumNames:
+            - Healthcare.com
+            - Pivot Health
+        owner:
+          title: owner
+          type: string
+          description: The team that owns the microservice.
+          enum:
+            - marketplace-platform
+            - pivot-health-insurtech-platform
+            - data
+            - infrastructure-platform
+          enumNames:
+            - Marketplace Platform
+            - Pivot Health
+            - Data
+            - Infrastructure Platform
+        businessUnit:
+          title: Business unit
+          type: string
+          maxLength: 63
+          description: Business unit name (max 63 chars)
+        cpu:
+          title: CPU
+          type: string
+          description: CPU requested resources and resource limit
+          default: 512m
+        ram:
+          title: RAM
+          type: string
+          description: RAM requested resources and resource limit
+          default: 512Mi
+    - title: Choose a location
+      required:
+        - repoName
+        - collaborators
+      properties:
+        repoName:
+          title: Repository Name
+          type: string
+          maxLength: 63
+          description: "Unique suffix for the repository name. The full name includes company/owner prefixes (max 63 chars to stay under GitHub's 100-char repo name limit)."
+        collaborators:
+          type: array
+          title: GitHub teams permissions
+          items:
+            type: "object"
+            required: ["team", "access"]
+            properties:
+              access:
+                type: string
+                description: "The type of access to the group"
+                enum: ["push", "pull", "admin", "maintain", "triage"]
+              team:
+                type: string
+                description: Group
+                ui:field: OwnerPicker
+                ui:options:
+                  catalogFilter:
+                    kind: Group
+
+  # REPO NAME EXPRESSION — the computed repo name appears in 5 places below (Fetch Base,
+  # Publish, Fetch ArgoCD app templates, Fetch GitHub OIDC role template, and the OIDC PR
+  # targetPath). All 5 must use the same logic or the created GitHub repo and the OIDC role
+  # in platform-terraform will target different names, silently breaking CI/CD auth.
+  steps:
+    - name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./template
+        cookiecutterCompat: false
+        values:
+          name: ${{ parameters.name }}
+          language: ${{ parameters.language }}
+          company: ${{ parameters.company }}
+          owner: ${{ parameters.owner }}
+          serviceName: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+          destination:
+            owner: healthcarecom
+            repo: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+          account: "396654217096"
+          businessUnit: ${{ parameters.businessUnit }}
+          cpu: ${{ parameters.cpu }}
+          ram: ${{ parameters.ram }}
+    - name: Fetch source
+      action: fetch:template
+      input:
+        url: "./${{ parameters.language }}"
+        cookiecutterCompat: false
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          language: ${{ parameters.language }}
+          account: "396654217096"
+          company: ${{ parameters.company }}
+          businessUnit: ${{ parameters.businessUnit }}
+          serviceName: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+          destination:
+            repo: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: ${{ parameters.name }}
+        repoUrl: "github.com?repo=${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}&owner=healthcarecom"
+        repoVisibility: "private"
+        defaultBranch: main
+        gitAuthorName: ${{ user.entity.metadata.name }}
+        collaborators: ${{ parameters.collaborators }}
+        bypassPullRequestAllowances:
+          apps:
+            - hc-devops-automation-app
+        requireCodeOwnerReviews: true
+        requiredConversationResolution: true
+        deleteBranchOnMerge: true
+        topics:
+          - backup-enabled
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+    - name: Fetch ArgoCD app templates
+      action: fetch:template
+      input:
+        url: ./argocd-app/
+        cookiecutterCompat: false
+        values:
+          company: ${{ parameters.company }}
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          businessUnit: ${{ parameters.businessUnit }}
+          serviceName: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+          destination:
+            owner: healthcarecom
+            repo: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+          language: ${{ parameters.language }}
+          account: "396654217096"
+    - id: argo-cd-app-pr
+      name: Create pull request to create ArgoCD app
+      action: publish:github:pull-request
+      update: true
+      input:
+        repoUrl: github.com?repo=platform-infrastructure-k8s-state&owner=healthcarecom
+        branchName: "${{ parameters.company }}-${{ parameters.name }}-argocd-app"
+        targetBranchName: "main"
+        title: "Create ArgoCD app for ${{ parameters.name }}"
+        description: "Create ArgoCD app for ${{ parameters.name }}, this  will deploy the ${{ parameters.name }} to the k8s cluster automatically after merging it to the main branch"
+        sourcePath: "app/"
+        targetPath: "teams/${{ parameters.owner | getTeamName }}/applications/${{ parameters.name }}"
+    - name: Fetch GitHub OIDC role template
+      action: fetch:template
+      input:
+        url: ./github-oidc-role/
+        cookiecutterCompat: false
+        values:
+          destination:
+            owner: healthcarecom
+            repo: "${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+    - id: github-oidc-role-pr
+      name: Create pull request for the GitHub OIDC role
+      action: publish:github:pull-request
+      update: true
+      input:
+        repoUrl: github.com?repo=platform-terraform&owner=healthcarecom
+        branchName: "${{ parameters.company }}-${{ parameters.name }}-github-oidc-role"
+        targetBranchName: "main"
+        title: "Add GitHub OIDC role for ${{ parameters.name }}"
+        description: "Dedicated GitHub OIDC IAM role scoped to this repo's own ECR repository, so its deploy workflow authenticates to AWS via OIDC instead of long-lived keys. Auto-applies on merge to main."
+        sourcePath: "role/"
+        targetPath: "infrastructure/devops-tooling/prd/github-oidc/${{ ('hc-data-' ~ parameters.repoName) if parameters.owner == 'data' else (('hc-platform-infra-' ~ parameters.repoName) if parameters.owner == 'infrastructure-platform' else (('ph-' ~ parameters.repoName) if parameters.company == 'ph' else ('hc-' ~ parameters.repoName))) }}"
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

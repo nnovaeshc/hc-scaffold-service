@@ -1,0 +1,128 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: synthetic-tenth-template
+  title: Synthetic Test Template
+  description: A synthetic template combining advanced schema features for testing
+  tags:
+    - synthetic
+    - test
+spec:
+  owner: group:platform-team
+  type: service
+
+  parameters:
+    - title: Basic Information
+      required:
+        - componentId
+        - owner
+      properties:
+        componentId:
+          title: Component ID
+          type: string
+          description: Unique identifier for the component
+          ui:autofocus: true
+
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+        environment:
+          title: Environment
+          type: string
+          description: Deployment environment
+          enum:
+            - dev
+            - staging
+            - prod
+          # No enumNames - testing fallback to raw values
+
+        # Field with $ref into definitions
+        databaseConfig:
+          $ref: '#/definitions/DatabaseConfig'
+
+        # Conditional dependencies with allOf/if/then
+        enableMonitoring:
+          title: Enable Monitoring
+          type: boolean
+          default: false
+
+      dependencies:
+        enableMonitoring:
+          allOf:
+            - if:
+                properties:
+                  enableMonitoring:
+                    const: true
+              then:
+                required:
+                  - monitoringEndpoint
+                properties:
+                  monitoringEndpoint:
+                    title: Monitoring Endpoint
+                    type: string
+                    description: URL for monitoring service
+
+    - title: Advanced Configuration
+      properties:
+        # Positional tuple items
+        coordinates:
+          title: Geographic Coordinates
+          type: array
+          description: Latitude and longitude
+          items:
+            - type: number
+              title: Latitude
+            - type: number
+              title: Longitude
+
+        # Unrecognized ui:field - should fall back gracefully
+        customWidget:
+          title: Custom Widget Field
+          type: string
+          description: Field with unrecognized widget
+          ui:field: UnrecognizedCustomWidget
+
+        # Unrecognized key nested inside property
+        metadataField:
+          title: Metadata
+          type: object
+          properties:
+            name:
+              type: string
+            customUnrecognizedKey: "ignored-value"
+
+  definitions:
+    DatabaseConfig:
+      type: object
+      required:
+        - dbType
+      properties:
+        dbType:
+          title: Database Type
+          type: string
+          enum:
+            - postgres
+            - mysql
+          default: postgres
+
+        connectionString:
+          title: Connection String
+          type: string
+
+  steps:
+    - id: log
+      name: Log Parameters
+      action: debug:log
+      input:
+        message: 'Creating component: ${{ parameters.componentId }}'
+
+  output:
+    links:
+      - title: Pull Request
+        url: 'https://github.com/example-org/${{ parameters.componentId }}/pull/1'
