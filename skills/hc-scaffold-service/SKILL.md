@@ -170,7 +170,7 @@ List any conditionally hidden fields that will NOT be submitted due to dependenc
 
 ### 11. Submit
 
-Call `scaffolder.execute-template` with:
+Call `execute-template` with:
 - `templateRef`: the chosen template's entity reference
 - `values`: object with all determined/asked field values
 
@@ -188,7 +188,7 @@ Task submitted: https://backstage.platform.healthcare.com/scaffolder/tasks/[task
 
 **If "check later"**: hand back the URL and how to ask for status.
 
-**If "watch"**: poll `scaffolder.get-scaffolder-task-logs` with the `after` cursor for incremental logs. Report step completions, not raw log dumps. 
+**If "watch"**: poll `get-scaffolder-task-logs` with the `after` cursor for incremental logs. Report step completions, not raw log dumps. 
 
 **On task success**: report declared `output.links` per the matrix in `reference.md` (repository, pull request, catalog entry).
 
