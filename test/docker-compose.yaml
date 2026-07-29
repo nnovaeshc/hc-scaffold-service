@@ -3,9 +3,6 @@ version: '3.8'
 services:
   ai-tdd:
     image: ai-tdd:latest
-    build:
-      context: ../../healthcare-images/ai/ai-tdd/latest
-      dockerfile: Dockerfile
     volumes:
       - ..:/work:ro
     environment:
