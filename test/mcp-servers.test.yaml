@@ -1,0 +1,10 @@
+mcpServers:
+  backstage:
+    enabled: true
+    command: python3
+    args:
+      - /work/test/stub/server.py
+  github:
+    enabled: false
+  atlassian:
+    enabled: false

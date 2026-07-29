@@ -1,0 +1,5 @@
+skills:
+  local:
+    - name: hc-scaffold-service
+      enabled: true
+      path: /work/skills/hc-scaffold-service
