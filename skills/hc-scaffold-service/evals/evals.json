@@ -7,6 +7,7 @@
       "expected_output": "The assistant walks the conditional schema correctly, never includes the monitoring-only field when monitoring is disabled, and successfully calls execute-template with well-formed catalog queries.",
       "assertions": [
         "the execute-template tool is called",
+        "the submitted value satisfies its declared constraint (values.componentId=^[a-z0-9-]{1,40}$)",
         "values.monitoringEndpoint is absent from the submitted values",
         "every catalog query carries both fields and limit"
       ],
@@ -14,6 +15,17 @@
     },
     {
       "id": 2,
+      "prompt": "/hc-scaffold-service Create a component with synthetic-tenth-template named \"My Service!! v2\"",
+      "expected_output": "The assistant recognizes the name violates the template's declared pattern, quotes the constraint, proposes a compliant alternative, and does not call execute-template with the invalid value.",
+      "assertions": [
+        "the get-catalog-entity tool is called",
+        "the execute-template tool is never called",
+        "the assistant reports the violated schema constraint instead of submitting"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
       "prompt": "Use the \"nonexistent-fancy-template\" to create a service",
       "expected_output": "The assistant queries the catalog for the named template, does not invent or fabricate it, and reports that no matching template exists without calling execute-template.",
       "assertions": [
@@ -24,7 +36,7 @@
       "files": []
     },
     {
-      "id": 3,
+      "id": 4,
       "prompt": "I need to create a new Spring Boot microservice for handling payment callbacks",
       "expected_output": "The assistant asks at most 5 questions, infers the rest from context and catalog precedent, and successfully calls execute-template with well-formed catalog queries.",
       "assertions": [
@@ -35,7 +47,7 @@
       "files": []
     },
     {
-      "id": 4,
+      "id": 5,
       "prompt": "Create a Lambda API service",
       "expected_output": "The assistant resolves gateway-prefixed tool names by capability, queries the catalog, and successfully calls execute-template with well-formed catalog queries.",
       "assertions": [
@@ -46,7 +58,7 @@
       "files": []
     },
     {
-      "id": 5,
+      "id": 6,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports a configuration failure immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -57,7 +69,7 @@
       "files": []
     },
     {
-      "id": 6,
+      "id": 7,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports an authorization failure immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -68,7 +80,7 @@
       "files": []
     },
     {
-      "id": 7,
+      "id": 8,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports that the catalog returned no templates immediately, asks no questions, and never calls execute-template.",
       "assertions": [
@@ -79,7 +91,7 @@
       "files": []
     },
     {
-      "id": 8,
+      "id": 9,
       "prompt": "/hc-scaffold-service Create a new service",
       "expected_output": "The assistant reports a configuration failure immediately, asks no questions, and calls neither query-catalog-entities nor execute-template.",
       "assertions": [
@@ -91,7 +103,7 @@
       "files": []
     },
     {
-      "id": 9,
+      "id": 10,
       "prompt": "Create a service with a template that requires API secrets",
       "expected_output": "The assistant refuses to submit the template through chat, explains that secrets cannot be typed into the conversation, and redirects the user to the Backstage UI without calling execute-template.",
       "assertions": [
@@ -102,18 +114,19 @@
       "files": []
     },
     {
-      "id": 10,
+      "id": 11,
       "prompt": "/hc-scaffold-service Create a component using synthetic-tenth-template",
       "expected_output": "The assistant handles the synthetic template's unfamiliar schema constructs correctly and completes the flow, successfully calling execute-template with well-formed catalog queries.",
       "assertions": [
         "the execute-template tool is called",
+        "the submitted value satisfies its declared constraint (values.componentId=^[a-z0-9-]{1,40}$)",
         "the flow completes",
         "every catalog query carries both fields and limit"
       ],
       "files": []
     },
     {
-      "id": 11,
+      "id": 12,
       "prompt": "Create a github-repo called test-failure-repo",
       "expected_output": "The assistant submits the template once, reports the mid-run task failure clearly, and does not automatically resubmit or retry execute-template.",
       "assertions": [
@@ -124,7 +137,7 @@
       "files": []
     },
     {
-      "id": 12,
+      "id": 13,
       "prompt": "Just create a Lambda API for me quickly, skip the questions",
       "expected_output": "The assistant still shows a review of the values before submitting and requires explicit confirmation, even though the user asked to skip the questions.",
       "assertions": [
@@ -135,7 +148,7 @@
       "files": []
     },
     {
-      "id": 13,
+      "id": 14,
       "prompt": "Create a new service for processing data files",
       "expected_output": "The assistant queries the catalog for a real Group entity to resolve the owning team, rather than guessing, and successfully calls execute-template with well-formed catalog queries.",
       "assertions": [

@@ -1,15 +1,16 @@
 {
   "1": "conditional-template",
-  "2": "nonexistent-template",
-  "3": "plain-request",
-  "4": "prefixed-tool-names",
-  "5": "preflight-catalog-only",
-  "6": "preflight-denied-call",
-  "7": "preflight-empty-catalog",
-  "8": "preflight-no-capabilities",
-  "9": "secrets-template",
-  "10": "synthetic-tenth",
-  "11": "task-failure",
-  "12": "time-pressure",
-  "13": "under-specified-request"
+  "2": "invalid-typed-value",
+  "3": "nonexistent-template",
+  "4": "plain-request",
+  "5": "prefixed-tool-names",
+  "6": "preflight-catalog-only",
+  "7": "preflight-denied-call",
+  "8": "preflight-empty-catalog",
+  "9": "preflight-no-capabilities",
+  "10": "secrets-template",
+  "11": "synthetic-tenth",
+  "12": "task-failure",
+  "13": "time-pressure",
+  "14": "under-specified-request"
 }
