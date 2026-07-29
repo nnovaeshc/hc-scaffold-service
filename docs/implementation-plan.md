@@ -496,11 +496,17 @@ Record observed tool names in a short note under `docs/` or in the PLT-584 worki
 
 ### T13 — Live run
 
-One real end-to-end run against production using `github-repo` with a throwaway repository name. Confirm the task reaches success and the declared `output.links` resolve. Delete the created repository afterwards.
+One real conversation against production using `github-repo` template. **Stop at the review stage - do NOT confirm submission.** The goal is to verify:
+- Production MCP endpoint is reachable and authenticated
+- Real template schema is fetchable and parseable
+- Skill classifies fields correctly
+- Review table is generated with proper provenance tagging
 
-**Commit (only if files change, e.g. captured transcript notes):** `docs: record live github-repo run outcome`
+Abort when prompted for submission confirmation. This verifies the full workflow through review without creating actual resources.
 
-*Done when:* one real component was created and cleaned up. Commit before starting T14 when files changed.
+**Commit (only if files change, e.g. captured transcript notes):** `docs: record live dry-run outcome`
+
+*Done when:* conversation reached review stage with production data, no resources created. Commit before starting T14 when files changed.
 
 ### T14 — Refresh documentation
 
