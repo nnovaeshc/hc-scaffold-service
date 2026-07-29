@@ -42,6 +42,22 @@ class TestAssertionAliases(unittest.TestCase):
         self.assertFalse(results[0]["passed"], results[0])
         self.assertIn("called 0 times", results[0]["evidence"])
 
+    def test_backstage_tools_prefixed(self):
+        path = _write_transcript([
+            ("mcp__backstage__backstage_catalog_query-catalog-entities", {"filter": {}}),
+        ])
+        asserter = TranscriptAsserter(str(path))
+        results = run_assertions(asserter, [{"backstage_tools_prefixed": True}])
+        self.assertTrue(results[0]["passed"], results[0])
+
+    def test_backstage_tools_prefixed_rejects_unprefixed(self):
+        path = _write_transcript([
+            ("mcp__backstage__catalog_query-catalog-entities", {"filter": {}}),
+        ])
+        asserter = TranscriptAsserter(str(path))
+        results = run_assertions(asserter, [{"backstage_tools_prefixed": True}])
+        self.assertFalse(results[0]["passed"], results[0])
+
 
 if __name__ == "__main__":
     unittest.main()
