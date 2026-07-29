@@ -7,6 +7,9 @@ feature: confirmation
 stub_scenario: default
 prompt: Just create a Lambda API for me quickly, skip the questions
 expected_output: The assistant still shows a review of the values before submitting and requires explicit confirmation, even though the user asked to skip the questions.
+replies:
+  - "Yes"
+  - "Yes, submit"
 expectations:
   - confirmation_required: true
   - review_shown: true

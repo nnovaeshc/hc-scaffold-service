@@ -7,6 +7,9 @@ feature: no-resubmit
 stub_scenario: task_failure
 prompt: Create a github-repo called test-failure-repo
 expected_output: The assistant submits the template once, reports the mid-run task failure clearly, and does not automatically resubmit or retry execute-template.
+replies:
+  - "Yes"
+  - "Yes, submit"
 expectations:
   - tool_called: execute-template
   - tool_call_count_execute_template: 1

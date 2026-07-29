@@ -8,6 +8,9 @@ stub_scenario: default
 prompt: /hc-scaffold-service Create a github-repo called billing-service owned by the data team
 compare_prompt: Create a github-repo called billing-service owned by the data team
 expected_output: The assistant proceeds through Backstage without raising any destination-scope question, taking the template's pinned repository owner silently and calling execute-template.
+replies:
+  - "Yes"
+  - "Yes, submit"
 expectations:
   - tool_called: get-catalog-entity
   - tool_called: execute-template
