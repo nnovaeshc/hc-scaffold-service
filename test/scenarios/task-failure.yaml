@@ -1,0 +1,8 @@
+name: task-failure
+description: Task fails mid-run, checking no resubmit
+stub_scenario: task_failure
+prompt: Create a github-repo called test-failure-repo
+expectations:
+  - tool_called: execute-template
+  - tool_call_count_execute_template: 1
+  - task_failure_reported: true

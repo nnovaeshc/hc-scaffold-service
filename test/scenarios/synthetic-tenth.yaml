@@ -1,0 +1,8 @@
+name: synthetic-tenth
+description: Synthetic tenth template, checking it completes unseen
+stub_scenario: default
+prompt: /hc-scaffold-service Create a component using synthetic-tenth-template
+expectations:
+  - tool_called: execute-template
+  - completion: true
+  - catalog_queries_have_fields_and_limit: true

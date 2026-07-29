@@ -1,0 +1,8 @@
+name: conditional-template
+description: Template with conditional dependencies, checking hidden field never appears in values
+stub_scenario: default
+prompt: /hc-scaffold-service Create a service with the synthetic-tenth-template, do not enable monitoring
+expectations:
+  - tool_called: execute-template
+  - json_path_absent: values.monitoringEndpoint
+  - catalog_queries_have_fields_and_limit: true

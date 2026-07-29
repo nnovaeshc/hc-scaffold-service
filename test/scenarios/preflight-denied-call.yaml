@@ -1,0 +1,8 @@
+name: preflight-denied-call
+description: Preflight failure - first catalog call denied
+stub_scenario: denied_first_call
+prompt: /hc-scaffold-service Create a new service
+expectations:
+  - question_count: 0
+  - tool_not_called: execute-template
+  - auth_failure_message: true

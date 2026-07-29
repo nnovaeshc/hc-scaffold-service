@@ -1,0 +1,8 @@
+name: preflight-catalog-only
+description: Preflight failure - catalog capability but no scaffolder
+stub_scenario: catalog_only
+prompt: /hc-scaffold-service Create a new service
+expectations:
+  - question_count: 0
+  - tool_not_called: execute-template
+  - config_failure_message: true

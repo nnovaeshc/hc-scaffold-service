@@ -1,0 +1,8 @@
+name: plain-request
+description: Plain request to create a service, checking question count stays at or below bound
+stub_scenario: default
+prompt: I need to create a new Spring Boot microservice for handling payment callbacks
+expectations:
+  - question_count_max: 5
+  - tool_called: execute-template
+  - catalog_queries_have_fields_and_limit: true

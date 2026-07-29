@@ -1,0 +1,8 @@
+name: prefixed-tool-names
+description: Gateway-prefixed tool names, checking capability matching resolves them
+stub_scenario: prefixed_tool_names
+prompt: Create a Lambda API service
+expectations:
+  - tool_called: query-catalog-entities
+  - tool_called: execute-template
+  - catalog_queries_have_fields_and_limit: true

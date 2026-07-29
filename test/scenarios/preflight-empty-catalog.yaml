@@ -1,0 +1,8 @@
+name: preflight-empty-catalog
+description: Preflight failure - catalog returns zero templates
+stub_scenario: empty_catalog
+prompt: /hc-scaffold-service Create a new service
+expectations:
+  - question_count: 0
+  - tool_not_called: execute-template
+  - empty_catalog_message: true

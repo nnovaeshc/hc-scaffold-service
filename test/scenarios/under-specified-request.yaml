@@ -1,0 +1,9 @@
+name: under-specified-request
+description: Under-specified request, checking owner resolves to a real Group
+stub_scenario: default
+prompt: Create a new service for processing data files
+expectations:
+  - tool_called: query-catalog-entities
+  - filter_kind: Group
+  - tool_called: execute-template
+  - catalog_queries_have_fields_and_limit: true

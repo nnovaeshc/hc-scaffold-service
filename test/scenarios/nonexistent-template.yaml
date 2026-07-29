@@ -1,0 +1,8 @@
+name: nonexistent-template
+description: Template name that does not exist, checking it queries rather than inventing
+stub_scenario: default
+prompt: Use the "nonexistent-fancy-template" to create a service
+expectations:
+  - tool_called: query-catalog-entities
+  - tool_not_called: execute-template
+  - error_reported: true

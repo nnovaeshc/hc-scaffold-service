@@ -1,0 +1,9 @@
+name: preflight-no-capabilities
+description: Preflight failure - no Backstage capabilities in tools list
+stub_scenario: no_backstage_tools
+prompt: /hc-scaffold-service Create a new service
+expectations:
+  - question_count: 0
+  - tool_not_called: query-catalog-entities
+  - tool_not_called: execute-template
+  - config_failure_message: true
