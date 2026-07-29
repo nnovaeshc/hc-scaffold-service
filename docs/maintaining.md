@@ -22,9 +22,9 @@ Do not add `commands/`, phase slash commands, or `agents/` / `context: fork` for
 
 ## The guards
 
-**The grep guard.** No file under `skills/hc-scaffold-service/` may contain a template name, environment name, AWS account number, or team name. `run.sh` scans the **entire skill directory** and a hit fails the build.
+**The grep guard.** No file under `skills/hc-scaffold-service/` may contain a template name, environment name, AWS account number, or team name. `run.sh` scans the **entire skill directory except `evals/`** and a hit fails the build.
 
-Naming real templates in these docs is fine and useful — the constraint is about what the skill *knows*, not what maintainers can write down. Examples and references inside the skill must use synthetic field shapes only.
+Naming real templates in these docs is fine and useful — the constraint is about what the skill *knows*, not what maintainers can write down. Examples and references inside the skill must use synthetic field shapes only. `evals/` is exempt for the same reason `test/fixtures/` is: `evals.json` is generated from `test/scenarios/*.yaml`, whose prompts legitimately reference real templates for testing purposes — that is test data, not skill instruction content.
 
 **The line-budget gate.** `wc -l skills/hc-scaffold-service/SKILL.md` must be ≤ 400. Failures that tempt you to paste schema walk into `SKILL.md` belong in `reference.md` instead.
 

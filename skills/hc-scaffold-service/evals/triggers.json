@@ -1,0 +1,16 @@
+{
+  "skill_name": "hc-scaffold-service",
+  "should_trigger": [
+    "I need to create a new Spring Boot service from a Backstage template",
+    "Scaffold a Lambda API for me",
+    "/hc-scaffold-service",
+    "Create a new component using the springboot-microservice template",
+    "I want to create a service but I don't want to open the Backstage UI"
+  ],
+  "should_not_trigger": [
+    "Refactor this Python module for readability",
+    "What is the capital of France?",
+    "Open a PR to bump a dependency version only",
+    "Explain how Backstage's catalog model works"
+  ]
+}

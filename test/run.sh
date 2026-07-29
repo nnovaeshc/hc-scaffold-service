@@ -110,7 +110,7 @@ FORBIDDEN_PATTERNS=(
 
 GREP_FAILED=false
 for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
-  if grep -r "$pattern" skills/hc-scaffold-service/ 2>/dev/null; then
+  if grep -r "$pattern" skills/hc-scaffold-service/ --exclude-dir=evals 2>/dev/null; then
     echo "ERROR: Found forbidden pattern '$pattern' in skill package"
     GREP_FAILED=true
   fi
