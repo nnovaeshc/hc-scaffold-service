@@ -2,6 +2,70 @@
 
 Maintainer-facing. How the harness is built and how to extend it.
 
+## Why this much infrastructure for one skill
+
+The shipped artifact is three markdown files. This directory is considerably larger than that, so it
+is worth stating where the size comes from.
+
+Anthropic's [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
+put evaluations at the centre of skill development — *"Create evaluations BEFORE writing extensive
+documentation"* — and call them *"your source of truth for measuring Skill effectiveness."* The
+checklist sets a floor of three. It sets no ceiling; the artifact does.
+
+**The sizing rule: one scenario per behavioural claim the skill makes, and no scenario without a
+recorded unaided failure to justify it.** `SKILL.md` makes thirteen such claims, so `test/scenarios/`
+holds thirteen files. Retire a claim and its scenario goes with it. That is the whole derivation —
+the suite is not sized by how much testing feels appropriate but by how much the skill asserts.
+
+The rest of the harness follows from properties of the artifact rather than from choices about
+coverage.
+
+**There is no compiler.** A change to any of the three files is a behaviour change with nothing to
+catch you — no type checker, no linter, no build step that can fail. Tests are the only verification
+that exists.
+
+**The practice is evaluation-first, and no runner ships for it.** The same page notes that *"There is
+not currently a built-in way to run these evaluations. Users can create their own evaluation
+system."* `test/` is that system. The five-step loop it describes — identify gaps, create
+evaluations, establish baseline, write minimal instructions, iterate — is what [Red first](#red-first)
+below performs; `run.sh`, the stub and the oracle are its moving parts. In Claude Code the
+[`skill-creator` plugin](https://code.claude.com/docs/en/skills#run-evals-with-skill-creator)
+mechanizes the same loop for skills that can be exercised through ordinary prompts. This skill's
+behaviour is a sequence of MCP tool calls against a live Backstage instance, which is why the loop is
+implemented here against a fixture server instead.
+
+**A baseline comparison needs a fresh session.** [Claude Code's guidance on evaluating a skill](https://code.claude.com/docs/en/skills#evaluate-and-iterate-on-a-skill)
+is explicit about why: *"A fresh session matters because leftover context from authoring the skill
+will mask gaps in the written instructions."* A maintainer trying the skill in the session where they
+just edited it is testing their own context, not the file. The `ai-tdd` container with its own
+`CLAUDE_CONFIG_DIR` and the `--no-skill` arm are what make each run start clean.
+
+**Two properties are measured, not one.** *"Seeing a skill trigger tells you Claude found it, not
+that it did what you intended."* Whether the skill activates on the right request is a different
+question from whether it behaves correctly once activated. Scenario prompts cover the first; the
+transcript oracle covers the second.
+
+**Effectiveness depends on the model.** *"Skills act as additions to models, so effectiveness depends
+on the underlying model. Test your Skill with all the models you plan to use it with."* This is why
+the model is a parameter rather than a constant, and why [Measurement](#measurement) records the model
+actually used rather than the one requested.
+
+**A false pass has side effects.** Backstage creates repositories and opens pull requests. Fail-fast,
+confirm-before-submit and no-auto-resubmit are safety properties; reading the rule in `SKILL.md` and
+agreeing with it does not verify that the model follows it under pressure. The scenarios that exercise
+those rules are the reason the harness needs a stub with failure modes rather than a single happy path.
+
+What is deliberately **not** here is as much a part of the sizing as what is: no HTTP stub, no golden
+transcripts, no LLM judge as a gate, no model matrix runner, no CI. Each was considered and rejected —
+see the decision record in [design.md](design.md).
+
+Changes to the harness are recorded the same way every other decision in this repo is: what the piece
+implements and what it catches, written into the decision record. And because the scenario count
+follows the claim count, the way to end up with a smaller suite is to make the skill claim less.
+
+See [skill-vs-baseline.md](skill-vs-baseline.md) for the skill-versus-baseline A/B comparison and how
+to run it.
+
 ## The problem
 
 The artifact under test is a prompt, and the system under test is a model. Behaviour is non-deterministic, so the usual approach of asserting on return values does not apply. Two decisions make it tractable.
@@ -74,6 +138,9 @@ cd test && ./run.sh              # all scenarios, with the skill
 ./run.sh --scenario time-pressure
 ./run.sh --model <slug>          # override the model; recorded in results
 ```
+
+`run.sh` currently implements the baseline arm as `--no-skill`; `--without-skill` is the intended alias
+and the arm is still being wired up — see [skill-vs-baseline.md](skill-vs-baseline.md) §5.1.
 
 `run.sh` also runs the package guards: a grep genericity scan over **all files** under `skills/hc-scaffold-service/`, and a `wc -l` line-budget check on `SKILL.md` (≤400). Those are part of the suite, not separate steps.
 
