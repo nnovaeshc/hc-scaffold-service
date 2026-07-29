@@ -14,8 +14,8 @@ checklist sets a floor of three. It sets no ceiling; the artifact does.
 
 **The sizing rule: one scenario per behavioural claim the skill makes, and no scenario without a
 recorded unaided failure to justify it.** `SKILL.md` makes thirteen such claims, so `test/scenarios/`
-holds thirteen files. Retire a claim and its scenario goes with it. That is the whole derivation —
-the suite is not sized by how much testing feels appropriate but by how much the skill asserts.
+holds thirteen files. Retire a claim and its scenario goes with it. That is the whole derivation: the
+size of the suite is a function of how much the skill asserts.
 
 The rest of the harness follows from properties of the artifact rather than from choices about
 coverage.
@@ -60,8 +60,8 @@ transcripts, no LLM judge as a gate, no model matrix runner, no CI. Each was con
 see the decision record in [design.md](design.md).
 
 Changes to the harness are recorded the same way every other decision in this repo is: what the piece
-implements and what it catches, written into the decision record. And because the scenario count
-follows the claim count, the way to end up with a smaller suite is to make the skill claim less.
+implements and what it catches, written into the decision record. Since the scenario count follows the
+claim count, a smaller suite follows from a skill that claims less.
 
 See [skill-vs-baseline.md](skill-vs-baseline.md) for the skill-versus-baseline A/B comparison and how
 to run it.

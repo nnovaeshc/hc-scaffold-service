@@ -68,3 +68,7 @@ See [docs/usage.md](docs/usage.md) for a full walkthrough, what the review step 
 **Atomic commits are mandatory.** Contributors and implementing agents MUST make many small commits: one task, feature, or test per commit; one logical change per commit; commit a finished task before starting the next; never squash the work into one giant commit at the end.
 
 Build order and the full commit rule live in [docs/implementation-plan.md](docs/implementation-plan.md). Agents MUST follow [CLAUDE.md](CLAUDE.md) (once present) and that plan — do not invent a different sequence.
+
+**Skill changes are verified by tests, because a prompt has no compiler.** Anthropic's guidance on [authoring](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) and [evaluating](https://code.claude.com/docs/en/skills#evaluate-and-iterate-on-a-skill) skills is evaluation-first and ships no runner for the loop it describes, so `test/` is ours. The suite carries one scenario per behavioural claim the skill makes, each recorded failing without the skill before the rule that fixes it is written. Add a claim and you add a scenario; that is where the size of `test/` comes from.
+
+[docs/testing.md](docs/testing.md) has the full rationale and the harness architecture.
