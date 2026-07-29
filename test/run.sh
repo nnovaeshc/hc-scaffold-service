@@ -153,7 +153,7 @@ for scenario in "${SCENARIOS[@]}"; do
   stub_scenario=${stub_scenario:-default}
 
   # Build claude command
-  claude_cmd="claude -p --verbose --output-format stream-json"
+  claude_cmd="claude -p --verbose --output-format stream-json --permission-mode acceptAll"
   [[ -n "$EFFORT" ]] && claude_cmd="$claude_cmd --effort $EFFORT"
   claude_cmd="$claude_cmd '$prompt'"
 
