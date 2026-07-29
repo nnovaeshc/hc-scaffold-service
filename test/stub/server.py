@@ -13,6 +13,45 @@ FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 SCENARIO = os.environ.get("STUB_SCENARIO", "default")
 
 
+def parse_metadata(content, fallback_name):
+    """Extract name/title/description/tags from the top-level `metadata:` block
+    only. Scanning the whole file would pick up the LAST `name:`/`title:`
+    anywhere - step names, nested property titles - instead of the entity's."""
+    meta = {"name": fallback_name, "title": None, "description": None, "tags": []}
+    in_metadata = False
+    in_tags = False
+
+    for raw_line in content.split('\n'):
+        if not raw_line.strip() or raw_line.lstrip().startswith('#'):
+            continue
+
+        # A non-indented key ends the metadata block.
+        if not raw_line[0].isspace():
+            in_metadata = raw_line.strip().startswith('metadata:')
+            in_tags = False
+            continue
+        if not in_metadata:
+            continue
+
+        stripped = raw_line.strip()
+        if in_tags:
+            if stripped.startswith('- '):
+                meta["tags"].append(stripped[2:].strip())
+                continue
+            in_tags = False
+
+        key, sep, val = stripped.partition(':')
+        if not sep:
+            continue
+        key, val = key.strip(), val.strip()
+        if key == 'tags':
+            in_tags = not val
+        elif key in ('name', 'title', 'description'):
+            meta[key] = val
+
+    return meta
+
+
 def load_templates():
     """Load all template fixtures."""
     templates_dir = FIXTURES_DIR / "templates"
@@ -20,39 +59,23 @@ def load_templates():
 
     for yaml_file in sorted(templates_dir.glob("*.yaml")):
         with open(yaml_file) as f:
-            # Simple YAML parsing - just extract key fields
             content = f.read()
-            name = yaml_file.stem
 
-            # Extract metadata
-            title = None
-            description = None
-            tags = []
+        meta = parse_metadata(content, yaml_file.stem)
 
-            for line in content.split('\n'):
-                line = line.strip()
-                if line.startswith('name:'):
-                    name = line.split(':', 1)[1].strip()
-                elif line.startswith('title:'):
-                    title = line.split(':', 1)[1].strip()
-                elif line.startswith('description:'):
-                    description = line.split(':', 1)[1].strip()
-                elif line.startswith('- ') and 'tags:' in content[:content.index(line)]:
-                    tags.append(line[2:].strip())
-
-            templates.append({
-                "metadata": {
-                    "name": name,
-                    "title": title or name,
-                    "description": description or "",
-                    "tags": tags
-                },
-                "spec": {
-                    "type": "service",
-                    "parameters": []  # Full spec loaded on demand
-                },
-                "_yaml": content
-            })
+        templates.append({
+            "metadata": {
+                "name": meta["name"],
+                "title": meta["title"] or meta["name"],
+                "description": meta["description"] or "",
+                "tags": meta["tags"]
+            },
+            "spec": {
+                "type": "service",
+                "parameters": []  # Full spec loaded on demand
+            },
+            "_yaml": content
+        })
 
     return templates
 
@@ -65,30 +88,19 @@ def load_groups():
     for yaml_file in sorted(groups_dir.glob("*.yaml")):
         with open(yaml_file) as f:
             content = f.read()
-            name = yaml_file.stem
 
-            title = None
-            description = None
+        meta = parse_metadata(content, yaml_file.stem)
 
-            for line in content.split('\n'):
-                line = line.strip()
-                if line.startswith('name:'):
-                    name = line.split(':', 1)[1].strip()
-                elif line.startswith('title:'):
-                    title = line.split(':', 1)[1].strip()
-                elif line.startswith('description:'):
-                    description = line.split(':', 1)[1].strip()
-
-            groups.append({
-                "metadata": {
-                    "name": name,
-                    "title": title or name,
-                    "description": description or ""
-                },
-                "spec": {
-                    "type": "team"
-                }
-            })
+        groups.append({
+            "metadata": {
+                "name": meta["name"],
+                "title": meta["title"] or meta["name"],
+                "description": meta["description"] or ""
+            },
+            "spec": {
+                "type": "team"
+            }
+        })
 
     return groups
 
