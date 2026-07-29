@@ -1,5 +1,6 @@
 ---
 name: hc-scaffold-service
+model: sonnet
 description: Creates a new component from a Backstage software template based on a natural-language description of what is needed. Triggers on "scaffold", "Backstage template", "create service", "create component", "new service from template", or explicit invocation. Works with any registered template by walking its schema and deriving values from context, catalog precedent, and conversation.
 ---
 
@@ -249,5 +250,6 @@ See `examples.md` for exact stop-message wording.
 
 - The Backstage web form is the **floor**, not the target. Reduce question count by inferring and deriving.
 - `reference.md` and `examples.md` are read on demand per explicit instruction above. They use synthetic field names only.
+- Requires Sonnet or better. `model: sonnet` pins the model for the invoking turn only; the session model resumes on the next prompt. The pin is advisory - an org `availableModels` allowlist can exclude it silently, and no runtime model check exists.
 - Background polling is out of scope - the MCP gateway requires per-user auth that a detached poller cannot obtain.
 - Backstage attributes actions to a shared `mcp-gateway` service principal, not the individual engineer. This is accepted.
