@@ -6,12 +6,14 @@ type: discipline
 feature: capability-matching
 stub_scenario: prefixed_tool_names
 prompt: Create a Lambda API service
-expected_output: The assistant resolves gateway-prefixed tool names by capability, queries the catalog, and successfully calls execute-template with well-formed catalog queries.
+expected_output: The assistant calls query-catalog-entities and execute-template under gateway-prefixed Backstage tool names, and catalog queries include fields and limit.
 replies:
-  - "Name it demo-lambda-api, owned by group:backend-team. Use defaults for anything else."
-  - "Yes"
+  - "Name it demo-lambda-api. description: Demo Lambda API service. owner: infrastructure-platform. account: 915124832670. environments: dev. businessUnit: platform. company: hc. collaborators: one team infrastructure-platform with push. Use RepoUrlPicker defaults under healthcarecom."
+  - "Yes, that ownership is correct"
+  - "Yes, submit"
   - "Yes, submit"
 expectations:
   - tool_called: query-catalog-entities
   - tool_called: execute-template
   - catalog_queries_have_fields_and_limit: true
+  - backstage_tools_prefixed: true

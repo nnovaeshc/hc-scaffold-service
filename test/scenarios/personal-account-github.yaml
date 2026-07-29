@@ -1,5 +1,5 @@
 name: personal-account-github
-description: User asks for a github-repo under their personal account, checking the skill declines to silently reroute into the org-pinned owner
+description: User asks for a github-repo under their personal account, checking destination-scope rejection instead of silent reroute
 compare: true
 tier: 2
 type: discipline
@@ -7,8 +7,9 @@ feature: destination-scope
 stub_scenario: default
 prompt: /hc-scaffold-service Create a github-repo called side-project-repo under my personal GitHub account, not through work
 compare_prompt: Create a github-repo called side-project-repo under my personal GitHub account, not through work
-expected_output: The assistant recognizes the template's repoUrl owner is pinned to a fixed org and cannot target a personal account, says so, and offers to proceed under the pinned org or hand off to default tooling instead - without calling execute-template.
+expected_output: The assistant fetches the template entity, reports that a personal/out-of-scope destination cannot be targeted (destination-scope framing), offers to proceed under an allowed org or hand off outside Backstage, and does not call execute-template.
 expectations:
   - tool_called: get-catalog-entity
   - tool_not_called: execute-template
   - destination_scope_reported: true
+  - destination_scope_offer: true

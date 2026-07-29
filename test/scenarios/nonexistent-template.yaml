@@ -6,7 +6,7 @@ type: discipline
 feature: template-discovery
 stub_scenario: default
 prompt: Use the "nonexistent-fancy-template" to create a service
-expected_output: The assistant queries the catalog for the named template, does not invent or fabricate it, and reports that no matching template exists without calling execute-template.
+expected_output: The assistant queries the catalog, reports that no matching template exists (error framing), and does not call execute-template.
 expectations:
   - tool_called: query-catalog-entities
   - tool_not_called: execute-template

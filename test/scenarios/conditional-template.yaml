@@ -7,10 +7,11 @@ feature: schema-walk
 stub_scenario: default
 prompt: /hc-scaffold-service Create a service with the synthetic-tenth-template, do not enable monitoring
 compare_prompt: Create a service with the synthetic-tenth-template, do not enable monitoring
-expected_output: The assistant walks the conditional schema correctly, never includes the monitoring-only field when monitoring is disabled, and successfully calls execute-template with well-formed catalog queries.
+expected_output: The assistant calls execute-template with a compliant componentId, does not report a constraint violation, omits values.monitoringEndpoint from the submit payload, and issues catalog queries that include fields and limit.
 replies:
-  - "Name it data-processor, owned by group:platform-team. Do not enable monitoring. Use defaults for anything else."
-  - "Yes"
+  - "componentId: data-processor. owner: group:platform-team. environment: dev. enableMonitoring: false. Omit optional advanced fields (coordinates, customWidget, metadataField, connectionString). Use schema defaults for anything else."
+  - "Yes, that ownership is correct"
+  - "Yes, submit"
   - "Yes, submit"
 expectations:
   - tool_called: execute-template
