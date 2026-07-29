@@ -42,8 +42,9 @@ just edited it is testing their own context, not the file. The `ai-tdd` containe
 
 **Two properties are measured, not one.** *"Seeing a skill trigger tells you Claude found it, not
 that it did what you intended."* Whether the skill activates on the right request is a different
-question from whether it behaves correctly once activated. Scenario prompts cover the first; the
-transcript oracle covers the second.
+question from whether it behaves correctly once activated. The stub harness + transcript oracle cover
+the second (post-activation behaviour). The first is interactive only: skill-creator against
+`evals/triggers.json` — see [triggers.md](triggers.md) for when maintainers must re-run it.
 
 **Effectiveness depends on the model.** *"Skills act as additions to models, so effectiveness depends
 on the underlying model. Test your Skill with all the models you plan to use it with."* This is why

@@ -147,7 +147,7 @@ task test:skill-creator:eval        # prints the evaluate-with-evals.json prompt
 task test:skill-creator:triggers    # prints the trigger-tuning prompt
 ```
 
-Do not treat skill-creator as a replacement for `task test:compare`; it is for trigger/description tuning only.
+Do not treat skill-creator as a replacement for `task test:compare`; it is for trigger/description tuning only. Re-run **triggers** whenever frontmatter `description` or `evals/triggers.json` changes (or after catalog phrase sync / real-world false +/- activation). Green compare does not cover activation. See [triggers.md](triggers.md).
 
 ## 5. What to build
 
