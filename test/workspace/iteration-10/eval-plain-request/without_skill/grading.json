@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "question_count_max: 5",
+      "passed": true,
+      "evidence": "asked 1 questions, max 5"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": false,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "1 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.6666666666666666
+  }
+}

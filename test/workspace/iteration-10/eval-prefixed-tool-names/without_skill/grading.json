@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: query-catalog-entities",
+      "passed": false,
+      "evidence": "tool_use name~=query-catalog-entities found=False"
+    },
+    {
+      "text": "tool_called: execute-template",
+      "passed": false,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "0 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.3333333333333333
+  }
+}

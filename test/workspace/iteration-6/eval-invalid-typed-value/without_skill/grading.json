@@ -1,0 +1,25 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: get-catalog-entity",
+      "passed": false,
+      "evidence": "tool_use name~=get-catalog-entity found=False"
+    },
+    {
+      "text": "tool_not_called: execute-template",
+      "passed": false,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "constraint_violation_reported: True",
+      "passed": false,
+      "evidence": "assistant text matched none of ['must match', 'invalid', 'constraint', 'pattern', 'too long', 'not allowed']"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3,
+    "pass_rate": 0.0
+  }
+}

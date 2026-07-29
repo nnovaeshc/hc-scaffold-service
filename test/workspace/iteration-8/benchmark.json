@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "skill_sha": "cfded7190614f31333944867ad3de9a9e9d5a1c7",
+  "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "effort": null,
+  "filters": {
+    "tiers": [],
+    "types": [],
+    "features": [],
+    "tests": [
+      "synthetic-tenth,invalid-typed-value"
+    ]
+  },
+  "scenarios": [
+    "invalid-typed-value",
+    "synthetic-tenth"
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0
+      },
+      "time_seconds": {
+        "mean": 46.138999999999996
+      },
+      "tokens": {
+        "mean": 423185.0
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.5
+      },
+      "time_seconds": {
+        "mean": 27.823
+      },
+      "tokens": {
+        "mean": 267138.0
+      }
+    },
+    "delta": {
+      "pass_rate": 0.5,
+      "time_seconds": 18.315999999999995,
+      "tokens": 156047.0
+    }
+  },
+  "per_scenario": [
+    {
+      "name": "invalid-typed-value",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 302851,
+          "duration_ms": 42471,
+          "input_tokens": 81,
+          "output_tokens": 44,
+          "cache_creation_input_tokens": 63225,
+          "cache_read_input_tokens": 239501
+        },
+        "without_skill": {
+          "total_tokens": 266390,
+          "duration_ms": 26267,
+          "input_tokens": 97,
+          "output_tokens": 18,
+          "cache_creation_input_tokens": 36843,
+          "cache_read_input_tokens": 229432
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 2,
+          "failed": 1,
+          "total": 3,
+          "pass_rate": 0.6666666666666666
+        }
+      },
+      "cached": {
+        "with_skill": false,
+        "without_skill": false
+      }
+    },
+    {
+      "name": "synthetic-tenth",
+      "with_skill_pass": true,
+      "without_skill_pass": true,
+      "pass_delta": 0,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 543519,
+          "duration_ms": 49807,
+          "input_tokens": 114,
+          "output_tokens": 29,
+          "cache_creation_input_tokens": 46474,
+          "cache_read_input_tokens": 496902
+        },
+        "without_skill": {
+          "total_tokens": 267886,
+          "duration_ms": 29379,
+          "input_tokens": 92,
+          "output_tokens": 74,
+          "cache_creation_input_tokens": 17963,
+          "cache_read_input_tokens": 249757
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "pass_rate": 1.0
+        }
+      },
+      "cached": {
+        "with_skill": false,
+        "without_skill": false
+      }
+    }
+  ]
+}

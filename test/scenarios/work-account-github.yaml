@@ -1,0 +1,14 @@
+name: work-account-github
+description: User asks for a github-repo with no destination stated, checking the org-pinned owner is still taken silently and submission proceeds (control for destination-scope over-triggering)
+compare: true
+tier: 2
+type: discipline
+feature: destination-scope
+stub_scenario: default
+prompt: /hc-scaffold-service Create a github-repo called billing-service owned by the data team
+compare_prompt: Create a github-repo called billing-service owned by the data team
+expected_output: The assistant proceeds through Backstage without raising any destination-scope question, taking the template's pinned repository owner silently and calling execute-template.
+expectations:
+  - tool_called: get-catalog-entity
+  - tool_called: execute-template
+  - destination_scope_reported: false

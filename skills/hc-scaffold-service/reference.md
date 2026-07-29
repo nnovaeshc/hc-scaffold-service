@@ -8,6 +8,7 @@ Detailed schema walking, precedence, and Backstage conventions.
 - Construct Support - JSON Schema keywords, Backstage `ui:` dialect, conditionals
 - Value Precedence (per field) - resolution order, first match wins
 - Constraint Validation - keyword checks, candidate repair, nested scope
+- Destination Scope - recognizing an explicit destination outside what the template allows
 - Recognized `ui:field` Widgets - OwnerPicker, RepoUrlPicker, EntityPicker, others
 - Collision Detection - catalog and GitHub name checks
 - Output Links Reporting - link type heuristics for task output
@@ -140,6 +141,25 @@ When a value fails, propose exactly one compliant candidate derived **mechanical
 | anything else | No proposal. Say what is required and ask |
 
 Never rewrite silently, and never submit the original value. The proposal is a suggestion the engineer confirms or replaces - a repaired name is still their decision, since it becomes a repository name and a catalog identity.
+
+## Destination Scope
+
+A **destination-scoping field** is any field a template constrains to a fixed set of accounts, owners,
+or orgs: an `enum` on an account/owner/org-shaped field, or `RepoUrlPicker`'s `allowedHosts` /
+`allowedOwners`. These are ordinary constrained fields under Value Precedence and Constraint
+Validation - the difference here is what to do when the engineer's own words name a destination
+outside the set.
+
+**This only applies when the engineer stated a destination.** Most requests name none; in that case
+the constrained value is Determined as usual, taken silently, shown in review. Nothing changes for the
+common case.
+
+**When the engineer names a destination not in the constrained set**, this is not a malformed value to
+repair - it is evidence the template is the wrong tool for what they asked. Do not propose the nearest
+allowed member the way a pattern or enum violation would. Instead, name what the template can actually
+produce (quoting the constraint), state that the stated destination is out of scope for it, and ask
+whether to proceed with the template's supported destination or handle the request outside Backstage
+with default tooling. Do not classify parameters or ask must-ask questions until this is resolved.
 
 ## Recognized `ui:field` Widgets
 

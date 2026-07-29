@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: get-catalog-entity",
+      "passed": true,
+      "evidence": "tool_use name~=get-catalog-entity found=True"
+    },
+    {
+      "text": "constraint_violation_reported: False",
+      "passed": true,
+      "evidence": "assistant text matched none of ['must match', 'violates', 'cannot use', 'not valid', 'too long', 'not allowed']"
+    },
+    {
+      "text": "completion: True",
+      "passed": true,
+      "evidence": "result_message present=True"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "4 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

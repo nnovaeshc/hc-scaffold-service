@@ -25,13 +25,14 @@ Scaffold Progress:
 - [ ] 3. Select template
 - [ ] 4. Fetch full template schema
 - [ ] 5. Check for secrets
-- [ ] 6. Classify parameters
-- [ ] 7. Collision check
-- [ ] 8. Ask only the gaps (validate every answer)
-- [ ] 9. Review before submission
-- [ ] 10. Confirm ownership and submission
-- [ ] 11. Submit (pre-submit constraint gate)
-- [ ] 12. Report task URL immediately
+- [ ] 6. Check destination scope
+- [ ] 7. Classify parameters
+- [ ] 8. Collision check
+- [ ] 9. Ask only the gaps (validate every answer)
+- [ ] 10. Review before submission
+- [ ] 11. Confirm ownership and submission
+- [ ] 12. Submit (pre-submit constraint gate)
+- [ ] 13. Report task URL immediately
 ```
 
 ### 1. Preflight: Verify MCP Access (BEFORE asking anything)
@@ -86,6 +87,9 @@ Read the user's stated intent and the ambient repository context:
 - What are they trying to build?
 - What template might match?
 - What values can be inferred from the working directory, git remote, or recent conversation?
+- **Did they name a specific destination?** A personal account, a named org/company other than the
+  default, or language like "not through work" - note it. Most requests name no destination and carry
+  no assumption; only an explicit one matters here.
 
 ### 3. Select Template
 
@@ -119,7 +123,28 @@ https://backstage.platform.healthcare.com/create/templates/[templateRef]
 ```
 **STOP. Do not proceed with this template.**
 
-### 6. Classify Parameters
+### 6. Check Destination Scope
+
+Only relevant if step 2 noted an explicit destination. Skip this step entirely otherwise.
+
+Scan the parameters tree for destination-scoping constraints: a field constrained to one legal value
+via `enum` where the field is account/owner/org-shaped, or a `RepoUrlPicker`'s `allowedHosts` /
+`allowedOwners`. See `reference.md` for how to recognize these.
+
+**If the user's stated destination is not among what the constraint allows:**
+```
+This template can only create [resource] under [what the schema allows, quoted]. It cannot
+target [what the user asked for].
+
+Create it there anyway, or handle this outside Backstage instead (e.g. gh CLI, GitHub MCP, AWS CLI)?
+```
+**STOP. Do not proceed into template classification until the user answers.** If they choose outside
+Backstage, hand off to the ordinary tool for that job and end the skill's involvement here.
+
+**If the destination matches what the schema allows, or the user named no destination**, proceed
+normally - the value is Determined by the constraint per step 7, taken silently, shown in review.
+
+### 7. Classify Parameters
 
 Walk `spec.parameters` pages in order. For each field:
 
@@ -143,7 +168,7 @@ Walk `spec.parameters` pages in order. For each field:
 - `EntityPicker` → select existing catalog entity
 - Unrecognized → fall back to declared JSON Schema type, no special behavior
 
-### 7. Collision Check
+### 8. Collision Check
 
 Before asking anything, verify the proposed component name:
 - **Catalog check**: query for existing entity with that name
@@ -151,13 +176,13 @@ Before asking anything, verify the proposed component name:
 
 If collision found, modify the name (append suffix or prompt for alternative) and re-check.
 
-### 8. Ask Only the Gaps
+### 9. Ask Only the Gaps
 
 For each **must-ask** field, ask **one question at a time**, each with a recommendation.
 
 **Do not script dialogue.** Phrasing is your judgment. The form's question text is the floor.
 
-**Validate every answer against the schema.** Check each value the moment it is given, against the constraint keywords from step 6. See `reference.md` for the keyword checks and repair rules.
+**Validate every answer against the schema.** Check each value the moment it is given, against the constraint keywords from step 7. See `reference.md` for the keyword checks and repair rules.
 
 If a value violates a declared constraint, name the field, quote the constraint as the schema declares it, say what specifically is wrong, and propose one compliant candidate:
 ```
@@ -174,7 +199,7 @@ Use `<proposed candidate>`? (or give another value)
 
 **Interaction floor**: when you have nothing to go on, ask what the Backstage web form asks. When you have precedent or constraints, reduce the question count.
 
-### 9. Review Before Submission
+### 10. Review Before Submission
 
 Present a provenance-tagged review table. See `examples.md` for the shape.
 
@@ -189,22 +214,22 @@ List any conditionally hidden fields that will NOT be submitted due to dependenc
 
 Every value in the review has already passed validation. Never present a value you know violates a constraint.
 
-### 10. Confirm Ownership and Submission
+### 11. Confirm Ownership and Submission
 
 **Two explicit confirmations required**, regardless of confidence:
 
 1. **Ownership**: "This will be owned by `group:<name>`. Confirm?"
 2. **Submission**: "Submit this to Backstage scaffolder?" (Yes/No)
 
-**If No**: return to step 8 to adjust values.
+**If No**: return to step 9 to adjust values.
 
 **Never submit without explicit confirmation.**
 
-### 11. Submit
+### 12. Submit
 
-**Constraint gate first.** Re-validate **every** value in the payload against the constraints from step 6 - engineer-stated, `default`, catalog precedent, and anything you derived from context alike. Derived values are as fat-fingerable as typed ones.
+**Constraint gate first.** Re-validate **every** value in the payload against the constraints from step 7 - engineer-stated, `default`, catalog precedent, and anything you derived from context alike. Derived values are as fat-fingerable as typed ones.
 
-**If any value fails: STOP.** Do not call `execute-template`. Report which field and which constraint, then return to step 8. This is the last chance - the call returns a `taskId`, not a verdict, and a failed task must not be resubmitted.
+**If any value fails: STOP.** Do not call `execute-template`. Report which field and which constraint, then return to step 9. This is the last chance - the call returns a `taskId`, not a verdict, and a failed task must not be resubmitted.
 
 Call `execute-template` with:
 - `templateRef`: the chosen template's entity reference
@@ -214,7 +239,7 @@ Call `execute-template` with:
 
 **Response**: the call returns `{ taskId }` only. This is NOT success - it means the task started.
 
-### 12. Report Task URL Immediately
+### 13. Report Task URL Immediately
 
 ```
 Task submitted: https://backstage.platform.healthcare.com/scaffolder/tasks/[taskId]
@@ -246,6 +271,7 @@ Task submitted: https://backstage.platform.healthcare.com/scaffolder/tasks/[task
 | **NEVER** proceed with secrets-declaring templates | Refuse and redirect to Backstage UI |
 | **NEVER** submit a value that violates a declared schema constraint | Submission is one-shot and cannot be retried; the scaffolder has side effects |
 | **NEVER** enforce a constraint the schema does not declare | Invented rules block legal values on templates the skill has never seen |
+| **NEVER** silently substitute a constraint-pinned destination for one the user explicitly named outside it | The user asked for a destination Backstage cannot produce; silently rerouting hides that from them |
 | **ALWAYS** match tools by capability, not exact name | Gateway prefixing and configuration flags change tool names |
 | **ALWAYS** read `reference.md` after fetching the template entity and before classifying parameters | The dialect details live there |
 | **ALWAYS** exclude conditionally hidden fields from submission | Check `dependencies` rules |
@@ -264,6 +290,7 @@ This table shows why defaults fail and what rule prevents each failure:
 | Secrets refusal | Asks user to provide secrets in chat | Secrets pass through LLM context | Scan for secrets fields; refuse before asking |
 | Collision check | Asks all questions then submits | Task fails because name already taken | Check catalog and GitHub before asking |
 | Constraint validation | Submits whatever was typed, assuming the scaffolder will validate | Task fails mid-run after side effects, and no retry is allowed | Validate at answer time and again before submit |
+| Destination scope check | Silently creates the resource under the org-pinned account/owner despite an explicit personal-account ask | Surprise ownership - the user's stated destination was ignored without them knowing | Check destination scope before classification; ask instead of substituting |
 | Explicit confirmation | Submits immediately after gathering values | User has no chance to review or abort | Two-gate confirmation (ownership + submission) |
 | No auto-resubmit | Retries task after failure | Re-runs side effects, creates duplicates | On failure, report and stop |
 | Precedent over hardcoding | Encodes "team X owns account Y" | Breaks when teams or accounts change | Query catalog for precedent; never hardcode business logic |
@@ -282,6 +309,8 @@ See `examples.md` for exact stop-message wording.
 **Secrets template**: redirect to Backstage UI, stop.
 
 **Constraint violation**: name the field and the constraint, propose a compliant candidate, do not submit.
+
+**Destination outside scope**: name what the template can produce, offer to proceed there or hand off to default tooling, do not submit for the unsupported destination.
 
 **Task failure**: report failing step, do not resubmit.
 

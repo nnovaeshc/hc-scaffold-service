@@ -217,6 +217,17 @@ class TranscriptAsserter:
         )
         return matched == expected, evidence
 
+    def assert_destination_scope_reported(self, expected: bool) -> (bool, str):
+        """Rejection-of-destination framing only, distinct from an ordinary
+        constraint violation: the model must name that the requested
+        destination (personal account, non-work org) is out of scope for
+        what the template can produce."""
+        matched, evidence = self._assistant_text_matches(
+            [r"personal account", r"outside backstage", r"cannot target", r"can only create",
+             r"not.{0,15}personal", r"outside (of )?what (the|this) template"]
+        )
+        return matched == expected, evidence
+
     def assert_redirect_to_backstage_ui(self, expected: bool) -> (bool, str):
         matched, evidence = self._assistant_text_matches(
             [r"backstage.{0,20}(ui|website|browser|portal)"]

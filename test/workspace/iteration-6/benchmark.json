@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "skill_sha": "46a5a2bb7a6cbfada0578ea24329af77271082d3",
+  "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "effort": null,
+  "filters": {
+    "tiers": [],
+    "types": [],
+    "features": [],
+    "tests": [
+      "invalid-typed-value"
+    ]
+  },
+  "scenarios": [
+    "invalid-typed-value"
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0
+      },
+      "time_seconds": {
+        "mean": 52.65
+      },
+      "tokens": {
+        "mean": 445977.0
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.0
+      },
+      "time_seconds": {
+        "mean": 20.032
+      },
+      "tokens": {
+        "mean": 220600.0
+      }
+    },
+    "delta": {
+      "pass_rate": 1.0,
+      "time_seconds": 32.617999999999995,
+      "tokens": 225377.0
+    }
+  },
+  "per_scenario": [
+    {
+      "name": "invalid-typed-value",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 445977,
+          "duration_ms": 52650,
+          "input_tokens": 135,
+          "output_tokens": 16,
+          "cache_creation_input_tokens": 80647,
+          "cache_read_input_tokens": 365179
+        },
+        "without_skill": {
+          "total_tokens": 220600,
+          "duration_ms": 20032,
+          "input_tokens": 96,
+          "output_tokens": 16,
+          "cache_creation_input_tokens": 32730,
+          "cache_read_input_tokens": 187758
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 0,
+          "failed": 3,
+          "total": 3,
+          "pass_rate": 0.0
+        }
+      },
+      "cached": {
+        "with_skill": false,
+        "without_skill": false
+      }
+    }
+  ]
+}

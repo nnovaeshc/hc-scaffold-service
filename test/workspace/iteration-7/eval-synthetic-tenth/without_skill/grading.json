@@ -1,0 +1,30 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: execute-template",
+      "passed": true,
+      "evidence": "tool_use name~=execute-template found=True"
+    },
+    {
+      "text": "submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$",
+      "passed": true,
+      "evidence": "values.componentId='my-test-component' vs /^[a-z0-9-]{1,40}$/ matched=True"
+    },
+    {
+      "text": "completion: True",
+      "passed": true,
+      "evidence": "result_message present=True"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "0 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

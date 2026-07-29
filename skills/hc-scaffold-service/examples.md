@@ -95,6 +95,26 @@ pattern ^[a-z0-9-]+$.
 Use `my-service`? (or give another name)
 ```
 
+## Destination scope messages
+
+### Repository owner pinned, engineer asked for a personal account
+
+```
+This template's `repoUrl` is pinned to owner `acme-corp` - Backstage can only create this
+repository there, not under a personal account.
+
+Create it under `acme-corp`, or handle this outside Backstage instead (e.g. gh CLI, GitHub MCP)?
+```
+
+### Account field pinned to an enum, engineer asked for one outside it
+
+```
+This template's `account` only allows `Prod Account`, `Dev Account` - Backstage cannot target
+a personal AWS account with it.
+
+Create it under one of those, or handle this outside Backstage instead (e.g. AWS CLI)?
+```
+
 ## Synthetic multi-page ask sequence
 
 **Page 1 fields:**

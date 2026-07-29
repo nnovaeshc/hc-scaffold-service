@@ -1,0 +1,35 @@
+{
+  "assertion_results": [
+    {
+      "text": "tool_called: execute-template",
+      "passed": false,
+      "evidence": "tool_use name~=execute-template found=False"
+    },
+    {
+      "text": "submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$",
+      "passed": false,
+      "evidence": "execute-template not called; cannot check values.componentId"
+    },
+    {
+      "text": "constraint_violation_reported: False",
+      "passed": true,
+      "evidence": "assistant text matched none of ['must match', 'violates', 'cannot use', 'not valid', 'too long', 'not allowed']"
+    },
+    {
+      "text": "json_path_absent: values.monitoringEndpoint",
+      "passed": true,
+      "evidence": "execute-template not called; values.monitoringEndpoint trivially absent"
+    },
+    {
+      "text": "catalog_queries_have_fields_and_limit: True",
+      "passed": true,
+      "evidence": "1 catalog queries all carry fields+limit"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  }
+}

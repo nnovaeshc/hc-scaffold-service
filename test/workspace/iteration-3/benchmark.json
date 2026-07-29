@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "skill_sha": "528ab7c5e3b3b67979e4866044176bba21881c40",
+  "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "effort": null,
+  "filters": {
+    "tiers": [
+      "1"
+    ],
+    "types": [],
+    "features": [],
+    "tests": []
+  },
+  "scenarios": [
+    "preflight-catalog-only",
+    "preflight-denied-call",
+    "preflight-empty-catalog",
+    "preflight-no-capabilities"
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0
+      },
+      "time_seconds": {
+        "mean": 20.01425
+      },
+      "tokens": {
+        "mean": 188088.75
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.0
+      },
+      "time_seconds": {
+        "mean": 19.84225
+      },
+      "tokens": {
+        "mean": 153231.0
+      }
+    },
+    "delta": {
+      "pass_rate": 1.0,
+      "time_seconds": 0.1720000000000006,
+      "tokens": 34857.75
+    }
+  },
+  "per_scenario": [
+    {
+      "name": "preflight-catalog-only",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 200756,
+          "duration_ms": 19161,
+          "input_tokens": 76,
+          "output_tokens": 16,
+          "cache_creation_input_tokens": 44110,
+          "cache_read_input_tokens": 156554
+        },
+        "without_skill": {
+          "total_tokens": 280357,
+          "duration_ms": 27433,
+          "input_tokens": 91,
+          "output_tokens": 52,
+          "cache_creation_input_tokens": 50454,
+          "cache_read_input_tokens": 229760
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 2,
+          "failed": 1,
+          "total": 3,
+          "pass_rate": 0.6666666666666666
+        }
+      }
+    },
+    {
+      "name": "preflight-denied-call",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 175349,
+          "duration_ms": 17789,
+          "input_tokens": 67,
+          "output_tokens": 13,
+          "cache_creation_input_tokens": 25589,
+          "cache_read_input_tokens": 149680
+        },
+        "without_skill": {
+          "total_tokens": 87470,
+          "duration_ms": 14894,
+          "input_tokens": 35,
+          "output_tokens": 10,
+          "cache_creation_input_tokens": 12025,
+          "cache_read_input_tokens": 75400
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 1,
+          "failed": 2,
+          "total": 3,
+          "pass_rate": 0.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "preflight-empty-catalog",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 175918,
+          "duration_ms": 17597,
+          "input_tokens": 65,
+          "output_tokens": 13,
+          "cache_creation_input_tokens": 8430,
+          "cache_read_input_tokens": 167410
+        },
+        "without_skill": {
+          "total_tokens": 42964,
+          "duration_ms": 11432,
+          "input_tokens": 20,
+          "output_tokens": 6,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 42938
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 1,
+          "failed": 2,
+          "total": 3,
+          "pass_rate": 0.3333333333333333
+        }
+      }
+    },
+    {
+      "name": "preflight-no-capabilities",
+      "with_skill_pass": true,
+      "without_skill_pass": false,
+      "pass_delta": 1,
+      "timing": {
+        "with_skill": {
+          "total_tokens": 200332,
+          "duration_ms": 25510,
+          "input_tokens": 76,
+          "output_tokens": 14,
+          "cache_creation_input_tokens": 25164,
+          "cache_read_input_tokens": 175078
+        },
+        "without_skill": {
+          "total_tokens": 202133,
+          "duration_ms": 25610,
+          "input_tokens": 72,
+          "output_tokens": 55,
+          "cache_creation_input_tokens": 15083,
+          "cache_read_input_tokens": 186923
+        }
+      },
+      "grading_summaries": {
+        "with_skill": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "pass_rate": 1.0
+        },
+        "without_skill": {
+          "passed": 3,
+          "failed": 1,
+          "total": 4,
+          "pass_rate": 0.75
+        }
+      }
+    }
+  ]
+}
