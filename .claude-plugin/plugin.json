@@ -1,0 +1,4 @@
+{
+  "name": "hc-scaffold-service",
+  "description": "Conversational interface to the Backstage scaffolder for creating new components from software templates."
+}

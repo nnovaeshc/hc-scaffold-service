@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hc-scaffold-service-marketplace",
+  "description": "Conversational interface to the Backstage scaffolder for creating new components from software templates.",
+  "owner": {
+    "name": "nnovaeshc",
+    "url": "https://github.com/nnovaeshc/hc-scaffold-service"
+  },
+  "plugins": [
+    {
+      "name": "hc-scaffold-service",
+      "source": "./",
+      "description": "Conversational interface to the Backstage scaffolder for creating new components from software templates.",
+      "category": "platform"
+    }
+  ]
+}
