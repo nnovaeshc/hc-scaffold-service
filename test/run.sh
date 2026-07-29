@@ -78,6 +78,15 @@ echo "    Skill installed: $INSTALL_SKILL"
 echo "    Scenarios: ${SCENARIOS[*]:-none}"
 echo
 
+# Export AWS credentials for Docker container
+echo "==> Exporting AWS credentials..."
+if ! eval $(aws configure export-credentials --profile hc-devopstooling-prod --format env 2>/dev/null); then
+  echo "WARNING: Failed to export AWS credentials. Tests may fail if Bedrock access is needed."
+  echo "Make sure 'aws sso login --profile hc-devopstooling-prod' has been run."
+fi
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+echo
+
 # Guard 1: Grep genericity check
 echo "==> Running genericity guard..."
 FORBIDDEN_PATTERNS=(
