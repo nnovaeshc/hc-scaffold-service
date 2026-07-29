@@ -1,6 +1,6 @@
 ---
 name: hc-scaffold-service
-description: Create a new component from a Backstage software template by describing what you want. Triggers on "scaffold", "Backstage template", "create service", "create component", "new service from template", or explicit invocation. Works with any registered template by walking its schema and deriving values from context, catalog precedent, and conversation.
+description: Creates a new component from a Backstage software template based on a natural-language description of what is needed. Triggers on "scaffold", "Backstage template", "create service", "create component", "new service from template", or explicit invocation. Works with any registered template by walking its schema and deriving values from context, catalog precedent, and conversation.
 ---
 
 # hc-scaffold-service
