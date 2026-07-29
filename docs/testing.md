@@ -175,6 +175,21 @@ From `assertions/check.py`, driven declaratively by each scenario file:
 
 An advisory LLM judge covers the one thing with no mechanical trace: whether an inference was *explained* rather than silently applied. It reports and never fails the build alone.
 
+## Multi-turn replies
+
+The skill requires two explicit confirmations before `execute-template` (review, then ownership + submit). Single-shot `claude -p` has nobody to answer, so any scenario that asserts `tool_called: execute-template` (or payload checks that need a submit) must declare scripted follow-ups:
+
+```yaml
+replies:
+  - "Name it demo-service, owned by group:data-team. Use defaults for anything else."
+  - "Yes"
+  - "Yes, submit"
+```
+
+The harness runs the initial `prompt` plus each `replies` entry in **one** docker container, using `claude -p --resume <session_id>` between turns, and concatenates the stream-json into a single transcript for the oracle. Both A/B arms get the same `replies`. Scenarios that stop at fail-fast, refusal, or confirmation-without-submit omit `replies` and stay single-shot.
+
+Implementation: `test/run_claude_turns.py`, used by `test/run.sh` and `test/assertions/write_workspace.py`.
+
 ## Measurement
 
 Every paired run writes a `timing.json` and `grading.json` per arm under `test/workspace/iteration-<N>/eval-<scenario>/{with_skill,without_skill}/`, rolled up into a top-level `benchmark.json`. A green suite is meaningless without knowing what produced it: the same prompt on a smaller model, or with less thinking budget, is a different experiment.
