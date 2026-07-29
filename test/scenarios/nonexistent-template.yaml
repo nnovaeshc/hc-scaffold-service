@@ -1,7 +1,12 @@
 name: nonexistent-template
 description: Template name that does not exist, checking it queries rather than inventing
+compare: true
+tier: 2
+type: discipline
+feature: template-discovery
 stub_scenario: default
 prompt: Use the "nonexistent-fancy-template" to create a service
+expected_output: The assistant queries the catalog for the named template, does not invent or fabricate it, and reports that no matching template exists without calling execute-template.
 expectations:
   - tool_called: query-catalog-entities
   - tool_not_called: execute-template

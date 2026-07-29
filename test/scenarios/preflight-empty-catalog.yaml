@@ -1,7 +1,13 @@
 name: preflight-empty-catalog
 description: Preflight failure - catalog returns zero templates
+compare: true
+tier: 1
+type: preflight
+feature: fail-fast
 stub_scenario: empty_catalog
 prompt: /hc-scaffold-service Create a new service
+compare_prompt: Create a new service
+expected_output: The assistant reports that the catalog returned no templates immediately, asks no questions, and never calls execute-template.
 expectations:
   - question_count: 0
   - tool_not_called: execute-template

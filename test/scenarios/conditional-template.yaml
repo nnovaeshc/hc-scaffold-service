@@ -1,7 +1,13 @@
 name: conditional-template
 description: Template with conditional dependencies, checking hidden field never appears in values
+compare: true
+tier: 3
+type: interview
+feature: schema-walk
 stub_scenario: default
 prompt: /hc-scaffold-service Create a service with the synthetic-tenth-template, do not enable monitoring
+compare_prompt: Create a service with the synthetic-tenth-template, do not enable monitoring
+expected_output: The assistant walks the conditional schema correctly, never includes the monitoring-only field when monitoring is disabled, and successfully calls execute-template with well-formed catalog queries.
 expectations:
   - tool_called: execute-template
   - json_path_absent: values.monitoringEndpoint
