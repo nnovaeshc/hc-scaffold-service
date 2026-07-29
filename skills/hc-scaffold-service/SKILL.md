@@ -27,10 +27,10 @@ Scaffold Progress:
 - [ ] 5. Check for secrets
 - [ ] 6. Classify parameters
 - [ ] 7. Collision check
-- [ ] 8. Ask only the gaps
+- [ ] 8. Ask only the gaps (validate every answer)
 - [ ] 9. Review before submission
 - [ ] 10. Confirm ownership and submission
-- [ ] 11. Submit
+- [ ] 11. Submit (pre-submit constraint gate)
 - [ ] 12. Report task URL immediately
 ```
 
@@ -126,6 +126,7 @@ Walk `spec.parameters` pages in order. For each field:
 **Read the schema**:
 - JSON Schema type (string, number, boolean, array, object)
 - `enum`, `enumNames`, `default`, `format`, `required`
+- Constraint keywords: `pattern`, `minLength`/`maxLength`, numeric bounds, item counts, `const` (see `reference.md`)
 - `ui:field`, `ui:options`
 - `dependencies`, `$ref`, `items` (see `reference.md`)
 
@@ -156,6 +157,19 @@ For each **must-ask** field, ask **one question at a time**, each with a recomme
 
 **Do not script dialogue.** Phrasing is your judgment. The form's question text is the floor.
 
+**Validate every answer against the schema.** Check each value the moment it is given, against the constraint keywords from step 6. See `reference.md` for the keyword checks and repair rules.
+
+If a value violates a declared constraint, name the field, quote the constraint as the schema declares it, say what specifically is wrong, and propose one compliant candidate:
+```
+`<field>` must <constraint as declared in the schema>.
+"<what was given>" <what specifically violates it>.
+
+Use `<proposed candidate>`? (or give another value)
+```
+**Never accept the violating value, and never rewrite it silently.** If no repair follows mechanically from the constraint, say what is required and ask again.
+
+**Only enforce constraints the schema declares.** Never reject a value for looking unconventional.
+
 **Handle time pressure**: if the user says "skip the questions" or "just do it", you still MUST present the review and require explicit confirmation. Never skip the review or confirmation gates.
 
 **Interaction floor**: when you have nothing to go on, ask what the Backstage web form asks. When you have precedent or constraints, reduce the question count.
@@ -173,6 +187,8 @@ Tag every value by source:
 
 List any conditionally hidden fields that will NOT be submitted due to dependencies.
 
+Every value in the review has already passed validation. Never present a value you know violates a constraint.
+
 ### 10. Confirm Ownership and Submission
 
 **Two explicit confirmations required**, regardless of confidence:
@@ -185,6 +201,10 @@ List any conditionally hidden fields that will NOT be submitted due to dependenc
 **Never submit without explicit confirmation.**
 
 ### 11. Submit
+
+**Constraint gate first.** Re-validate **every** value in the payload against the constraints from step 6 - engineer-stated, `default`, catalog precedent, and anything you derived from context alike. Derived values are as fat-fingerable as typed ones.
+
+**If any value fails: STOP.** Do not call `execute-template`. Report which field and which constraint, then return to step 8. This is the last chance - the call returns a `taskId`, not a verdict, and a failed task must not be resubmitted.
 
 Call `execute-template` with:
 - `templateRef`: the chosen template's entity reference
@@ -224,6 +244,8 @@ Task submitted: https://backstage.platform.healthcare.com/scaffolder/tasks/[task
 | **NEVER** encode business rules | No team-to-account maps, no env names, no AWS accounts in the skill - use catalog precedent instead |
 | **NEVER** fetch the whole catalog | Every query MUST have `fields` and `limit` |
 | **NEVER** proceed with secrets-declaring templates | Refuse and redirect to Backstage UI |
+| **NEVER** submit a value that violates a declared schema constraint | Submission is one-shot and cannot be retried; the scaffolder has side effects |
+| **NEVER** enforce a constraint the schema does not declare | Invented rules block legal values on templates the skill has never seen |
 | **ALWAYS** match tools by capability, not exact name | Gateway prefixing and configuration flags change tool names |
 | **ALWAYS** read `reference.md` after fetching the template entity and before classifying parameters | The dialect details live there |
 | **ALWAYS** exclude conditionally hidden fields from submission | Check `dependencies` rules |
@@ -241,6 +263,7 @@ This table shows why defaults fail and what rule prevents each failure:
 | Template existence check | Invents template names from training data | Submits to a template that does not exist | Query catalog; if not found, stop |
 | Secrets refusal | Asks user to provide secrets in chat | Secrets pass through LLM context | Scan for secrets fields; refuse before asking |
 | Collision check | Asks all questions then submits | Task fails because name already taken | Check catalog and GitHub before asking |
+| Constraint validation | Submits whatever was typed, assuming the scaffolder will validate | Task fails mid-run after side effects, and no retry is allowed | Validate at answer time and again before submit |
 | Explicit confirmation | Submits immediately after gathering values | User has no chance to review or abort | Two-gate confirmation (ownership + submission) |
 | No auto-resubmit | Retries task after failure | Re-runs side effects, creates duplicates | On failure, report and stop |
 | Precedent over hardcoding | Encodes "team X owns account Y" | Breaks when teams or accounts change | Query catalog for precedent; never hardcode business logic |
@@ -257,6 +280,8 @@ See `examples.md` for exact stop-message wording.
 **Empty catalog**: zero templates → report, stop.
 
 **Secrets template**: redirect to Backstage UI, stop.
+
+**Constraint violation**: name the field and the constraint, propose a compliant candidate, do not submit.
 
 **Task failure**: report failing step, do not resubmit.
 
