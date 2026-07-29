@@ -379,7 +379,12 @@ def handle_request(request):
                 "error": call_result["error"]
             }
 
-        response = call_result.get("result", call_result)
+        # MCP requires tools/call results to carry a `content` block list.
+        # Returning the bare payload reads as "completed with no output".
+        payload = call_result.get("result", call_result)
+        response = {"content": [{"type": "text", "text": json.dumps(payload)}]}
+    elif method.startswith("notifications/"):
+        return None  # notifications carry no id and take no response
     else:
         return {
             "jsonrpc": "2.0",
@@ -406,7 +411,8 @@ def main():
         try:
             request = json.loads(line.strip())
             response = handle_request(request)
-            print(json.dumps(response), flush=True)
+            if response is not None:
+                print(json.dumps(response), flush=True)
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSON decode error: {e}\n")
             sys.stderr.flush()
