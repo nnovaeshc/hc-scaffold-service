@@ -127,12 +127,13 @@ The oracle (`test/assertions/check.py`) checks:
 2. **Arguments:** Tools have `fields` and `limit`, correct filters
 3. **JSON paths:** Submitted values match expectations
 4. **Absence:** Conditionally hidden fields not submitted
-5. **Question count:** At or below bound
-6. **Fail-fast:** No questions after preflight failure
-7. **Call limits:** No auto-resubmit (execute-template called once)
-8. **Size limits:** Largest tool result under byte ceiling
-9. **Token limits:** Total fresh input tokens under ceiling
-10. **Explanations:** LLM judge for inference quality (advisory)
+5. **Constraints:** Submitted values satisfy their declared schema constraint (`submitted_value_matches`); a violating input is reported rather than submitted (`constraint_violation_reported`)
+6. **Question count:** At or below bound
+7. **Fail-fast:** No questions after preflight failure
+8. **Call limits:** No auto-resubmit (execute-template called once)
+9. **Size limits:** Largest tool result under byte ceiling
+10. **Token limits:** Total fresh input tokens under ceiling
+11. **Explanations:** LLM judge for inference quality (advisory)
 
 ## Guards
 

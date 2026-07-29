@@ -69,6 +69,8 @@ The decision record in [design.md](design.md) explains each of these. In short, 
 
 **New schema constructs** in real templates. If a template uses something the five rules do not cover, extend the rules generically and add the construct to the synthetic template. Do not special-case the template.
 
+**Constraint keywords are enforced from the schema, never hardcoded.** Validation (`reference.md` → Constraint Validation) is driven only by the keywords a template declares — `pattern`, lengths, bounds, item counts, `enum`. A template registered tomorrow is validated by the same rules. Do not add a per-template or per-field validation rule, and do not teach the skill naming conventions: an invented constraint rejects legal values on templates nobody has seen yet, which is the failure the genericity guards exist to catch. When a real template uses a keyword the table does not cover, add the keyword generically and add it to `synthetic-tenth.yaml`.
+
 **The sandbox image** (`healthcarecom/healthcare-images`, `ai/ai-tdd/latest`) can change its config contract. The harness depends on `MCP_SERVERS_TEMPLATE`, `SKILLS_TEMPLATE`, `CLAUDE_CONFIG_DIR`, and local skills being copied to `${CLAUDE_CONFIG_DIR}/skills/<name>/`.
 
 **Claude Code plugin format.** Packaging follows the upstream plugin format plus the contract in `healthcarecom/ai-config` `docs/plugin-format.md`, which requires `.claude-plugin/plugin.json` with `name` matching the directory.

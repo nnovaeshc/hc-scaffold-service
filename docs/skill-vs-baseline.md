@@ -83,14 +83,14 @@ expectations:
 
 - **`tier`:** `1` = fail-fast/cheap; `2` = medium discipline; `3` = complex interview/schema.
 - **`type`:** `preflight` | `discipline` | `interview`.
-- **`feature`:** `fail-fast` | `confirmation` | `template-discovery` | `schema-walk` | `no-resubmit` | `secrets-refusal` | `capability-matching` | `inference` | `question-budget`.
+- **`feature`:** `fail-fast` | `confirmation` | `template-discovery` | `schema-walk` | `no-resubmit` | `secrets-refusal` | `capability-matching` | `inference` | `question-budget` | `constraint-validation`.
 
 ### One-time label values (write into YAMLs once; do not copy into living docs)
 
 When adding fields to existing scenarios, set:
 
 - **Tier 1 / type `preflight` / feature `fail-fast`:** `preflight-no-capabilities`, `preflight-denied-call`, `preflight-empty-catalog`, `preflight-catalog-only`
-- **Tier 2 / type `discipline`:** `nonexistent-template` (`template-discovery`), `secrets-template` (`secrets-refusal`), `task-failure` (`no-resubmit`), `prefixed-tool-names` (`capability-matching`), `time-pressure` (`confirmation`)
+- **Tier 2 / type `discipline`:** `nonexistent-template` (`template-discovery`), `secrets-template` (`secrets-refusal`), `task-failure` (`no-resubmit`), `prefixed-tool-names` (`capability-matching`), `time-pressure` (`confirmation`), `invalid-typed-value` (`constraint-validation`)
 - **Tier 3 / type `interview`:** `plain-request` (`question-budget`), `under-specified-request` (`inference`), `conditional-template` (`schema-walk`), `synthetic-tenth` (`schema-walk`)
 
 After that, inventory = the YAML files + `task test:list`.
