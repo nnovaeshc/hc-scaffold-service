@@ -1,7 +1,7 @@
 ---
 name: hc-scaffold-service
 model: sonnet
-description: Creates a new component from a Backstage software template based on a natural-language description of what is needed. Triggers on "scaffold", "Backstage template", "create service", "create component", "new service from template", or explicit invocation. Works with any registered template by walking its schema and deriving values from context, catalog precedent, and conversation.
+description: Creates a new service, component, or other resource from any registered Backstage software template through conversation, without opening the Backstage UI - walks the template's own schema and infers values from context, catalog precedent, and conversation, so it keeps working as new templates are added to the catalog. INVOKE FOR the /hc-scaffold-service command, or requests to scaffold, create, or spin up a new service, component, API, microservice, or Lambda from a Backstage template (e.g. "create a service for payment callbacks", "scaffold a Lambda API", "new service from template") - even if the user never says the word "Backstage". SKIP for code changes inside an existing app/repo (e.g. "create a React component in this app"), general questions about Backstage or its catalog, or ops tasks against services that already exist (docker compose, deploys, restarts).
 ---
 
 # hc-scaffold-service
