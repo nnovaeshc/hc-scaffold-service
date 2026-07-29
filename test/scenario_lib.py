@@ -26,10 +26,16 @@ def _parse_scalar(raw: str) -> Any:
 
 
 def load_scenario(path: str) -> Dict[str, Any]:
-    """Parse a scenario YAML file. Assumes the flat schema documented above."""
+    """Parse a scenario YAML file. Assumes the flat schema documented above.
+
+    Optional `replies:` is a list of single-line follow-up user messages used
+    by the multi-turn harness after the initial prompt (confirmations, etc.).
+    """
     data: Dict[str, Any] = {}
     expectations: List[Dict[str, Any]] = []
+    replies: List[str] = []
     in_expectations = False
+    in_replies = False
 
     with open(path) as f:
         for raw_line in f:
@@ -40,6 +46,12 @@ def load_scenario(path: str) -> Dict[str, Any]:
 
             if not line.startswith(" ") and stripped.startswith("expectations:"):
                 in_expectations = True
+                in_replies = False
+                continue
+
+            if not line.startswith(" ") and stripped.startswith("replies:"):
+                in_replies = True
+                in_expectations = False
                 continue
 
             if in_expectations:
@@ -52,6 +64,14 @@ def load_scenario(path: str) -> Dict[str, Any]:
                     continue
                 in_expectations = False
 
+            if in_replies:
+                if line.startswith("  - "):
+                    replies.append(str(_parse_scalar(line[4:].strip())))
+                    continue
+                if line.startswith(" "):
+                    continue
+                in_replies = False
+
             if line.startswith(" "):
                 continue
 
@@ -61,6 +81,7 @@ def load_scenario(path: str) -> Dict[str, Any]:
             data[key.strip()] = _parse_scalar(val)
 
     data["expectations"] = expectations
+    data["replies"] = replies
     data.setdefault("compare", False)
     return data
 
