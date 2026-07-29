@@ -7,6 +7,10 @@ feature: inference
 stub_scenario: default
 prompt: Create a new service for processing data files
 expected_output: The assistant queries the catalog for a real Group entity to resolve the owning team, rather than guessing, and successfully calls execute-template with well-formed catalog queries.
+replies:
+  - "Name it data-file-processor, owned by group:data-team. Use defaults for anything else."
+  - "Yes"
+  - "Yes, submit"
 expectations:
   - tool_called: query-catalog-entities
   - filter_kind: Group
