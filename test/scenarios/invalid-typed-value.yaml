@@ -1,0 +1,14 @@
+name: invalid-typed-value
+description: User supplies a value violating the template's declared pattern, checking rejection with a proposed fix instead of submission
+compare: true
+tier: 2
+type: discipline
+feature: constraint-validation
+stub_scenario: default
+prompt: /hc-scaffold-service Create a component with synthetic-tenth-template named "My Service!! v2"
+compare_prompt: Create a component with synthetic-tenth-template named "My Service!! v2"
+expected_output: The assistant recognizes the name violates the template's declared pattern, quotes the constraint, proposes a compliant alternative, and does not call execute-template with the invalid value.
+expectations:
+  - tool_called: get-catalog-entity
+  - tool_not_called: execute-template
+  - constraint_violation_reported: true

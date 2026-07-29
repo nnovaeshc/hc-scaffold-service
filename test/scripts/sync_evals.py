@@ -29,6 +29,8 @@ ASSERTION_TEMPLATES = {
     "question_count_max": "at most {value} questions are asked",
     "catalog_queries_have_fields_and_limit": "every catalog query carries both fields and limit",
     "json_path_absent": "{value} is absent from the submitted values",
+    "submitted_value_matches": "the submitted value satisfies its declared constraint ({value})",
+    "constraint_violation_reported": "the assistant reports the violated schema constraint instead of submitting",
     "filter_kind": "a catalog query filters on kind: {value}",
     "config_failure_message": "a configuration failure is reported",
     "auth_failure_message": "an authorization failure is reported",

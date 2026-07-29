@@ -122,6 +122,22 @@ class TranscriptAsserter:
                 return True, f"{json_path} not navigable in {tool_name} input"
         return False, f"{json_path} present in {tool_name} input when it should be absent"
 
+    def assert_submitted_value_matches(self, spec: str) -> (bool, str):
+        """spec is "<dot.path>=<regex>", e.g. "values.componentId=^[a-z0-9-]+$".
+        The regex may not contain ':' - scenario_lib partitions the expectation
+        line on the first colon."""
+        json_path, _, pattern = spec.partition("=")
+        calls = self.get_tool_calls("execute-template")
+        if not calls:
+            return False, f"execute-template not called; cannot check {json_path}"
+        value = calls[-1].get("input", {})
+        for part in json_path.split("."):
+            if not isinstance(value, dict) or part not in value:
+                return False, f"{json_path} absent from execute-template input"
+            value = value[part]
+        matched = re.fullmatch(pattern, str(value)) is not None
+        return matched, f"{json_path}={value!r} vs /{pattern}/ matched={matched}"
+
     def assert_question_count_max(self, max_questions: int) -> (bool, str):
         count = 0
         for msg in self.messages:
@@ -188,6 +204,12 @@ class TranscriptAsserter:
     def assert_refusal_message(self, expected: bool) -> (bool, str):
         matched, evidence = self._assistant_text_matches(
             [r"cannot submit", r"won't", r"refuse", r"secret"]
+        )
+        return matched == expected, evidence
+
+    def assert_constraint_violation_reported(self, expected: bool) -> (bool, str):
+        matched, evidence = self._assistant_text_matches(
+            [r"must match", r"invalid", r"constraint", r"pattern", r"too long", r"not allowed"]
         )
         return matched == expected, evidence
 

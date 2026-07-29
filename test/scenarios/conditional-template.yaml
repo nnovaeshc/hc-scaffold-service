@@ -10,5 +10,6 @@ compare_prompt: Create a service with the synthetic-tenth-template, do not enabl
 expected_output: The assistant walks the conditional schema correctly, never includes the monitoring-only field when monitoring is disabled, and successfully calls execute-template with well-formed catalog queries.
 expectations:
   - tool_called: execute-template
+  - submitted_value_matches: values.componentId=^[a-z0-9-]{1,40}$
   - json_path_absent: values.monitoringEndpoint
   - catalog_queries_have_fields_and_limit: true
