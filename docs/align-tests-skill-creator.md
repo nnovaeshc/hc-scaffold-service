@@ -87,6 +87,9 @@ stub_scenario: default
 prompt: "..."
 expected_output: "Human-readable success description for graders and evals.json"
 # compare_prompt: "..."             # optional fair prompt for no-skill arm
+# replies:                          # optional multi-turn follow-ups (see docs/testing.md)
+#   - "Yes"
+#   - "Yes, submit"
 expectations:
   - question_count_max: 5
   - tool_called: execute-template
