@@ -255,13 +255,27 @@ def load_all_expectations(scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
     return scenario.get("expectations", [])
 
 
+# Expectation keys that do not map 1:1 to assert_<key>. Value is
+# (method_name, args_from_expectation_value).
+ASSERTION_ALIASES = {
+    "tool_call_count_execute_template": (
+        "assert_tool_call_count",
+        lambda v: ("execute-template", v),
+    ),
+}
+
+
 def run_assertions(asserter: TranscriptAsserter, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Run each declared expectation, returning grading.json-shaped assertion_results."""
     results = []
     for expectation in expectations:
         for key, value in expectation.items():
-            method_name = f"assert_{key}"
-            method = getattr(asserter, method_name, None)
+            if key in ASSERTION_ALIASES:
+                method_name, _args_fn = ASSERTION_ALIASES[key]
+                method = getattr(asserter, method_name, None)
+            else:
+                method_name = f"assert_{key}"
+                method = getattr(asserter, method_name, None)
             if method is None:
                 results.append({
                     "text": f"{key} = {value}",
@@ -270,14 +284,13 @@ def run_assertions(asserter: TranscriptAsserter, expectations: List[Dict[str, An
                 })
                 continue
             try:
-                if key in ("tool_called", "tool_not_called", "filter_kind"):
+                if key in ASSERTION_ALIASES:
+                    passed, evidence = method(*ASSERTION_ALIASES[key][1](value))
+                elif key in ("tool_called", "tool_not_called", "filter_kind"):
                     passed, evidence = method(value)
-                elif key == "tool_call_count_execute_template":
-                    passed, evidence = method("execute-template", value)
                 elif key == "catalog_queries_have_fields_and_limit":
                     passed, evidence = method() if value else (True, "assertion opted out")
                 elif key == "json_path_absent":
-                    tool_name, _, path = value.partition(".") if isinstance(value, str) else ("", "", "")
                     # json_path_absent value is "values.field"; tool is always execute-template here
                     passed, evidence = method("execute-template", value)
                 else:
